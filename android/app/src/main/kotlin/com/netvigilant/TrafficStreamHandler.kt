@@ -1,4 +1,4 @@
-package com.example.netvigilant
+package com.netvigilant
 
 import android.content.Context
 import io.flutter.plugin.common.EventChannel

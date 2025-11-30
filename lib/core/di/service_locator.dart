@@ -22,11 +22,11 @@ final GetIt sl = GetIt.instance;
 Future<void> setupServiceLocator() async {
   // Platform Channel Wrappers
   sl.registerLazySingleton<MethodChannelWrapper>(
-    () => MethodChannelWrapper('com.example.netvigilant/network_stats'),
+    () => MethodChannelWrapper('com.netvigilant/network_stats'),
   );
   
   sl.registerLazySingleton<EventChannelWrapper>(
-    () => EventChannelWrapper('com.example.netvigilant/traffic_stream'),
+    () => EventChannelWrapper('com.netvigilant/traffic_stream'),
   );
 
   // Services

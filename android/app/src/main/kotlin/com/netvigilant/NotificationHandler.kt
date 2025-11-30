@@ -9,7 +9,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import com.example.netvigilant.MainActivity
+import com.netvigilant.MainActivity
 
 class NotificationHandler(private val context: Context) : MethodChannel.MethodCallHandler {
 

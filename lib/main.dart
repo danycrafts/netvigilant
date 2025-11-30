@@ -9,15 +9,11 @@ import 'package:netvigilant/presentation/screens/onboarding_screen.dart';
 import 'package:netvigilant/core/services/local_storage_service.dart';
 import 'package:netvigilant/core/platform/platform_channel_wrappers.dart';
 import 'package:netvigilant/core/services/notification_service.dart';
+import 'package:netvigilant/presentation/screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize dependency injection
-  setupServiceLocator();
-  
-  log("NetVigilant: Application starting...");
-
   runApp(const ProviderScope(child: NetVigilantApp()));
 }
 
@@ -28,33 +24,51 @@ class NetVigilantApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeNotifier = ref.watch(theme_provider.themeProvider.notifier);
 
-    return MaterialApp(
-      title: 'NetVigilant',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeNotifier.flutterThemeMode,
-      debugShowCheckedModeBanner: false,
-      home: FutureBuilder<bool>(
-        future: PermissionChecker.hasUsageStatsPermission(), // Check permission status
-        builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
+    return FutureBuilder(
+      future: setupServiceLocator(),
+      builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return MaterialApp(
+            title: 'NetVigilant',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeNotifier.flutterThemeMode,
+            debugShowCheckedModeBanner: false,
+            routes: {
+              '/home': (context) => const HomeScreen(),
+            },
+            home: FutureBuilder<bool>(
+              future: PermissionChecker.hasUsageStatsPermission(), // Check permission status
+              builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                } else {
+                  if (snapshot.data == true) {
+                    // Permission granted, proceed to splash screen
+                    return const SplashScreen();
+                  } else {
+                    // Permission not granted, show onboarding screen
+                    _showPermissionReminder(context); // Call reminder logic
+                    return const OnboardingScreen();
+                  }
+                }
+              },
+            ),
+          );
+        } else {
+          return const MaterialApp(
+            home: Scaffold(
               body: Center(
                 child: CircularProgressIndicator(),
               ),
-            );
-          } else {
-            if (snapshot.data == true) {
-              // Permission granted, proceed to splash screen
-              return const SplashScreen();
-            } else {
-              // Permission not granted, show onboarding screen
-              _showPermissionReminder(context); // Call reminder logic
-              return const OnboardingScreen();
-            }
-          }
-        },
-      ),
+            ),
+          );
+        }
+      },
     );
   }
 
