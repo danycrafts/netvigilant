@@ -1,0 +1,71 @@
+name: Flutter CI/CD
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  FLUTTER_VERSION: '3.x' # Or specify a precise version, e.g., '3.19.x'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Analyze Code
+        run: flutter analyze
+
+      - name: Run Tests
+        run: flutter test
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: test # Ensure tests pass before building
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: android
+            os: ubuntu-latest
+            command: "flutter build apk --debug"
+          - platform: ios
+            os: macos-latest
+            command: "flutter build ios --no-codesign"
+          - platform: web
+            os: ubuntu-latest
+            command: "flutter build web"
+          - platform: linux
+            os: ubuntu-latest
+            command: "flutter build linux"
+          - platform: macos
+            os: macos-latest
+            command: "flutter build macos"
+          - platform: windows
+            os: ubuntu-latest
+            command: "flutter build windows"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build ${{ matrix.platform }}
+        run: ${{ matrix.command }}

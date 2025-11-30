@@ -1,0 +1,67 @@
+name: Flutter Release CI/CD
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Triggers on tags like v1.0.0, v1.0.0-beta, etc.
+
+env:
+  FLUTTER_VERSION: '3.x' # Or specify a precise version, e.g., '3.19.x'
+
+jobs:
+  release:
+    name: Build and Release ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: android
+            os: ubuntu-latest
+            command: "flutter build appbundle --release"
+            artifact_name: "android-appbundle"
+            artifact_path: "build/app/outputs/bundle/release/app-release.aab"
+          - platform: ios
+            os: macos-latest
+            command: "flutter build ios --release --no-codesign"
+            artifact_name: "ios-app"
+            artifact_path: "build/ios/iphoneos/Runner.app" # This path might vary slightly
+          - platform: web
+            os: ubuntu-latest
+            command: "flutter build web --release"
+            artifact_name: "web-app"
+            artifact_path: "build/web"
+          - platform: linux
+            os: ubuntu-latest
+            command: "flutter build linux --release"
+            artifact_name: "linux-app"
+            artifact_path: "build/linux/x64/release/bundle" # This path might vary slightly
+          - platform: macos
+            os: macos-latest
+            command: "flutter build macos --release"
+            artifact_name: "macos-app"
+            artifact_path: "build/macos/Build/Products/Release/flutter_app.app" # This path might vary slightly
+          - platform: windows
+            os: ubuntu-latest
+            command: "flutter build windows --release"
+            artifact_name: "windows-app"
+            artifact_path: "build/windows/x64/release/bundle" # This path might vary slightly
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build ${{ matrix.platform }}
+        run: ${{ matrix.command }}
+
+      - name: Upload ${{ matrix.platform }} Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}

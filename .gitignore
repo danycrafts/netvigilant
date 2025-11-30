@@ -1,0 +1,94 @@
+# ===========================================
+# Flutter / Dart / Pub
+# ===========================================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# ===========================================
+# IDE / Editors
+# ===========================================
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code (safe to include if you prefer)
+.vscode/
+
+# ===========================================
+# OS Files
+# ===========================================
+.DS_Store
+Thumbs.db
+
+# ===========================================
+# Android
+# ===========================================
+android/.gradle/
+android/local.properties
+android/key.properties
+android/keystore.properties
+android/app/build/
+android/build/
+android/app/src/debug/
+android/app/src/profile/
+android/app/src/release/
+
+# ===========================================
+# iOS
+# ===========================================
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/.last_build_id
+ios/.generated/
+
+# ===========================================
+# Desktop Platforms
+# ===========================================
+# Linux
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Windows
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
+# ===========================================
+# Web - These should NOT be ignored normally
+# Only generated JS can be ignored (optional)
+# ===========================================
+# Keep index.html — needed!
+web/main.dart.js
+web/main.dart.js.map
+web/flutter_bootstrap.js
+web/assets/AssetManifest.json
+web/assets/FontManifest.json
+web/assets/NOTICES
+
+# ===========================================
+# Logs / Misc
+# ===========================================
+*.log
+*.pyc
+*.swp
+*.class
+migrate_working_dir/
+migrated_working_dir/
+
+# Tools like Claude/GPT local caches
+.claude/
