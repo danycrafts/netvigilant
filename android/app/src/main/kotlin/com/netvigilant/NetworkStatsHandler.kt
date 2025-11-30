@@ -1,4 +1,4 @@
-package com.example.netvigilant
+package com.netvigilant
 
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
