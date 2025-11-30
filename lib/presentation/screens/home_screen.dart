@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:netvigilant/presentation/providers/network_providers.dart';
 import 'package:netvigilant/presentation/providers/database_providers.dart';
-import 'package:netvigilant/presentation/widgets/real_time_speed_gauge.dart';
+import 'package:netvigilant/presentation/widgets/real_time_chart.dart';
 import 'package:netvigilant/presentation/screens/app_detail_screen.dart';
 import 'package:netvigilant/domain/entities/real_time_metrics_entity.dart';
 
@@ -29,36 +29,11 @@ class HomeScreen extends ConsumerWidget {
             elevation: 0.5,
           ),
 
-          // Real-Time Speed Gauge
+          // Real-Time Speed Chart
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: realTimeMetricsAsyncValue.when(
-                data: (metrics) => RealTimeSpeedGauge(
-                  uplinkSpeed: metrics.uplinkSpeed,
-                  downlinkSpeed: metrics.downlinkSpeed,
-                ),
-                loading: () => const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(40.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ),
-                error: (error, stack) => Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                        const SizedBox(height: 8),
-                        Text('Error loading speed data', style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 4),
-                        Text(error.toString(), style: Theme.of(context).textTheme.bodySmall),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              child: RealTimeNetworkChart(asyncMetrics: realTimeMetricsAsyncValue),
             ),
           ),
 
