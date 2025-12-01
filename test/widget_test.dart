@@ -8,13 +8,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:apptobe/main.dart';
+import 'package:netvigilant/main.dart';
 
 void main() {
   testWidgets('App compiles and builds without errors', (WidgetTester tester) async {
     // Just test that the app builds without throwing an exception
     // This will catch the SharedPreferences error we're trying to fix
-    await tester.pumpWidget(const AppToBe());
+    await tester.pumpWidget(const NetVigilant());
     await tester.pump();
 
     // If we get here, the app built successfully (SharedPreferences fallback worked)

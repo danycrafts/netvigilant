@@ -1,8 +1,10 @@
 import 'dart:io';
+
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:apptobe/core/widgets/common_widgets.dart';
-import 'package:apptobe/core/constants/app_constants.dart';
+import 'package:netvigilant/core/widgets/common_widgets.dart';
+import 'package:netvigilant/core/constants/app_constants.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String firstName;
@@ -32,16 +34,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _usernameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
-  File? _profileImage;
+  File? _image;
 
-  Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _profileImage = File(pickedFile.path);
-      });
-    }
-  }
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -51,7 +46,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _usernameController = TextEditingController(text: widget.username);
     _emailController = TextEditingController(text: widget.email);
     _phoneController = TextEditingController(text: widget.phone);
-    _profileImage = widget.profileImage;
+    _image = widget.profileImage;
   }
 
   @override
@@ -64,16 +59,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
+  }
+
   void _saveProfile() {
-    final result = {
+    Navigator.pop(context, {
       'firstName': _firstNameController.text,
       'lastName': _lastNameController.text,
       'username': _usernameController.text,
       'email': _emailController.text,
       'phone': _phoneController.text,
-      'profileImage': _profileImage,
-    };
-    Navigator.pop(context, result);
+      'profileImage': _image,
+    });
   }
 
   @override
@@ -81,38 +85,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return AppScaffold(
       title: 'Edit Profile',
       actions: [
-        TextButton(
+        IconButton(
+          icon: const Icon(Icons.save),
           onPressed: _saveProfile,
-          child: Text(
-            'Save',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+        )
       ],
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Column(
-          children: [
+          children: <Widget>[
             const SizedBox(height: AppConstants.defaultSpacing),
             Center(
               child: Stack(
                 children: [
                   CircleAvatar(
                     radius: AppConstants.avatarRadius,
-                    backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
-                    child: _profileImage == null ? const Icon(Icons.person, size: 50) : null,
+                    backgroundImage: _image != null ? FileImage(_image!) : null,
+                    child: _image == null
+                        ? const Icon(Icons.person, size: 60)
+                        : null,
                   ),
                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      radius: 20,
+                      backgroundColor: Theme.of(context).primaryColor,
                       child: IconButton(
-                        icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                        icon: const Icon(Icons.camera_alt, color: Colors.white),
                         onPressed: _pickImage,
                       ),
                     ),
@@ -122,30 +122,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: AppConstants.largePadding),
             AppTextField(
-              label: 'First Name',
               controller: _firstNameController,
+              label: 'First Name',
             ),
             const SizedBox(height: AppConstants.defaultSpacing),
             AppTextField(
-              label: 'Last Name',
               controller: _lastNameController,
+              label: 'Last Name',
             ),
             const SizedBox(height: AppConstants.defaultSpacing),
             AppTextField(
-              label: 'Username',
               controller: _usernameController,
+              label: 'Username',
             ),
             const SizedBox(height: AppConstants.defaultSpacing),
             AppTextField(
-              label: 'Email',
               controller: _emailController,
+              label: 'Email',
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: AppConstants.defaultSpacing),
-            AppTextField(
-              label: 'Phone',
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
+            Row(
+              children: [
+                CountryCodePicker(
+                  onChanged: print,
+                  initialSelection: 'US',
+                  favorite: const ['+1', 'US'],
+                ),
+                Expanded(
+                  child: AppTextField(
+                    controller: _phoneController,
+                    label: 'Phone Number',
+                    keyboardType: TextInputType.phone,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

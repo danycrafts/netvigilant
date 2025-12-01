@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:latlong2/latlong.dart';
 import '../models/network_info.dart';
 import '../services/wifi_network_service.dart';
 import '../services/mobile_network_service.dart';
@@ -27,6 +28,16 @@ class NetworkProvider with ChangeNotifier {
   bool get hasMobileConnection => _currentConnectivity.contains(ConnectivityResult.mobile);
   bool get hasAnyConnection => hasWifiConnection || hasMobileConnection;
   List<ConnectivityResult> get currentConnectivity => _currentConnectivity;
+  
+  LatLng? get publicIpLocation {
+    if (hasWifiConnection && _wifiNetworkInfo != null) {
+      return _wifiNetworkInfo!.publicIpPosition;
+    }
+    if (hasMobileConnection && _mobileNetworkInfo != null) {
+      return _mobileNetworkInfo!.publicIpPosition;
+    }
+    return null;
+  }
 
   Future<void> startMonitoring() async {
     if (_isMonitoring) return;

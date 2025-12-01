@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:apptobe/core/presentation/base/base_auth_screen.dart';
-import 'package:apptobe/core/providers/auth_provider.dart';
-import 'package:apptobe/core/constants/app_constants.dart';
+import 'package:netvigilant/core/presentation/base/base_auth_screen.dart';
+import 'package:netvigilant/core/providers/auth_provider.dart';
+import 'package:netvigilant/core/constants/app_constants.dart';
 
 class LoginScreen extends BaseAuthScreen {
   const LoginScreen({super.key});
