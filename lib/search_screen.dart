@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:apptobe/core/widgets/common_widgets.dart';
-import 'package:apptobe/core/constants/app_constants.dart';
-import 'package:apptobe/core/services/app_usage_service.dart';
-import 'package:apptobe/core/services/permission_manager.dart';
+import 'package:netvigilant/core/widgets/common_widgets.dart';
+import 'package:netvigilant/core/constants/app_constants.dart';
+import 'package:netvigilant/core/services/app_usage_service.dart';
+import 'package:netvigilant/core/services/permission_manager.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -13,7 +13,8 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver {
+class _SearchScreenState extends State<SearchScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   List<Application> _apps = [];
   List<Application> _filteredApps = [];
@@ -54,7 +55,8 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
       final apps = await DeviceApps.getInstalledApplications(
         includeAppIcons: true,
         includeSystemApps: true, // Show all apps including system apps
-        onlyAppsWithLaunchIntent: false, // Show all apps even without launch intent
+        onlyAppsWithLaunchIntent:
+            false, // Show all apps even without launch intent
       );
       if (mounted) {
         setState(() {
@@ -103,7 +105,8 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        color:
+                            Theme.of(context).colorScheme.primary.withAlpha(51),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -173,9 +176,14 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
                         Expanded(
                           child: Text(
                             'Usage statistics require app usage permission. Tap "Grant Permission" to enable.',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onErrorContainer,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
+                                ),
                           ),
                         ),
                       ],
@@ -221,8 +229,8 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
             child: Text(
               '$label:',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ),
           Expanded(
@@ -239,7 +247,8 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
   Widget _buildUsageStats(AppUsageInfo usageInfo) {
     return Column(
       children: [
-        _buildInfoRow('Total Usage Time', _formatDuration(usageInfo.totalTimeInForeground)),
+        _buildInfoRow(
+            'Total Usage Time', _formatDuration(usageInfo.totalTimeInForeground)),
         _buildInfoRow('Launch Count', usageInfo.launchCount.toString()),
         _buildInfoRow('Last Used', _formatDateTime(usageInfo.lastTimeUsed)),
       ],
@@ -259,7 +268,7 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays} days ago';
     } else if (difference.inHours > 0) {
@@ -297,7 +306,8 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
               child: _isLoading
                   ? _buildShimmerGrid()
                   : _apps.isEmpty
-                      ? const Center(child: Text('No apps found on this device.'))
+                      ? const Center(
+                          child: Text('No apps found on this device.'))
                       : _buildAppGrid(),
             ),
           ],
@@ -364,7 +374,7 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.surface.withAlpha(128),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -384,7 +394,10 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withAlpha(51),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -400,8 +413,8 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 10,
-                    ),
+                          fontSize: 10,
+                        ),
                   ),
                 ],
               ),

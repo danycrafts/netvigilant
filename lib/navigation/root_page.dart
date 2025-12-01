@@ -1,6 +1,6 @@
-import 'package:apptobe/account_screen.dart';
-import 'package:apptobe/home_screen.dart';
-import 'package:apptobe/search_screen.dart';
+import 'package:netvigilant/account_screen.dart';
+import 'package:netvigilant/home_screen.dart';
+import 'package:netvigilant/search_screen.dart';
 import 'package:flutter/material.dart';
 
 class RootPage extends StatefulWidget {

@@ -1,4 +1,4 @@
-package com.example.apptobe
+package com.danycrafts.netvigilant
 
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager

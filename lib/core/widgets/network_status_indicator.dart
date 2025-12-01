@@ -54,7 +54,7 @@ class NetworkStatusIndicator extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: indicatorColor.withOpacity(0.3)),
+          border: Border.all(color: indicatorColor.withAlpha(77)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -69,7 +69,7 @@ class NetworkStatusIndicator extends StatelessWidget {
                 boxShadow: networkInfo?.status == NetworkStatus.connected
                     ? [
                         BoxShadow(
-                          color: indicatorColor.withOpacity(0.5),
+                          color: indicatorColor.withAlpha(128),
                           blurRadius: 8,
                           spreadRadius: 2,
                         )

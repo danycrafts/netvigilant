@@ -119,13 +119,13 @@ class EmptyStateWidget extends StatelessWidget {
             Icon(
               icon ?? Icons.inbox_outlined,
               size: 64,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(102),
             ),
             const SizedBox(height: 16),
             Text(
               title,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
               ),
               textAlign: TextAlign.center,
             ),
@@ -134,7 +134,7 @@ class EmptyStateWidget extends StatelessWidget {
               Text(
                 subtitle!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(102),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -192,7 +192,14 @@ class StateBuilder<T> extends StatelessWidget {
           );
     }
 
-    return builder(context, data!);
+    if (data == null) {
+      return emptyBuilder?.call(context) ??
+          const EmptyStateWidget(
+            title: 'No data available',
+            subtitle: 'There\'s nothing to show right now.',
+          );
+    }
+    return builder(context, data);
   }
 }
 
