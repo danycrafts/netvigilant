@@ -174,6 +174,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
                                 subdomains: const ['a', 'b', 'c', 'd'],
                                 userAgentPackageName: 'com.example.apptobe',
+                                retinaMode: RetinaMode.isHighDensity(context),
                               ),
                               MarkerLayer(markers: [
                                 // Green marker for user's physical location
