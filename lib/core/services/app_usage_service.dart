@@ -36,14 +36,14 @@ class AppUsageService {
           return AppUsageInfo(
             totalTimeInForeground:
                 Duration(milliseconds: int.parse(appUsage.totalTimeInForeground!)),
-            launchCount: int.parse(appUsage.totalTimeVisible!),
+            launchCount: int.parse(appUsage.appLaunchCount!),
             lastTimeUsed:
                 DateTime.fromMillisecondsSinceEpoch(int.parse(appUsage.lastTimeUsed!)),
           );
         }
       }
     } catch (e) {
-      // Handle exceptions
+      print('Error fetching app usage info: $e');
     }
     return null;
   }

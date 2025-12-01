@@ -69,10 +69,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  void _saveProfile() {
+    Navigator.pop(context, {
+      'firstName': _firstNameController.text,
+      'lastName': _lastNameController.text,
+      'username': _usernameController.text,
+      'email': _emailController.text,
+      'phone': _phoneController.text,
+      'profileImage': _image,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Edit Profile',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.save),
+          onPressed: _saveProfile,
+        )
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Column(

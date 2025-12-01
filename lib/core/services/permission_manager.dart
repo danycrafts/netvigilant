@@ -6,12 +6,12 @@ class PermissionManager {
       'usagePermissionRequested';
 
   static Future<void> requestAndStoreUsagePermission() async {
-    await Permission.appUsage.request();
+    await Permission.usage.request();
     await markUsagePermissionAsked();
   }
 
   static Future<bool> hasUsagePermission() async {
-    final status = await Permission.appUsage.status;
+    final status = await Permission.usage.status;
     return status.isGranted;
   }
 

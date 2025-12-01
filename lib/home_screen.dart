@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final networkProvider = context.read<NetworkProvider>();
     if (!mounted) return;
 
-    final newPosition = networkProvider.publicIpPosition;
+    final newPosition = networkProvider.publicIpLocation;
     if (newPosition != _publicIpPosition) {
       setState(() {
         _publicIpPosition = newPosition;
