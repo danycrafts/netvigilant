@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -203,8 +202,8 @@ class _NetworkDetailsCardState extends State<NetworkDetailsCard> {
           Expanded(
             child: isLoading
                 ? Shimmer.fromColors(
-                    baseColor: Theme.of(context).colorScheme.surfaceVariant,
-                    highlightColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                    baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    highlightColor: Theme.of(context).colorScheme.onSurface.withAlpha(26),
                     child: Container(
                       height: isMultiLine ? 32 : 16,
                       decoration: BoxDecoration(
@@ -232,7 +231,7 @@ class _NetworkDetailsCardState extends State<NetworkDetailsCard> {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.2),
+            color: colorScheme.primary.withAlpha(51),
             blurRadius: 8,
             spreadRadius: 2,
           ),
@@ -251,8 +250,8 @@ class _NetworkDetailsCardState extends State<NetworkDetailsCard> {
           const SizedBox(height: 8),
           isLoading
               ? Shimmer.fromColors(
-                  baseColor: Theme.of(context).colorScheme.surfaceVariant,
-                  highlightColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                  baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  highlightColor: Theme.of(context).colorScheme.onSurface.withAlpha(26),
                   child: Container(
                     width: 100,
                     height: 24,

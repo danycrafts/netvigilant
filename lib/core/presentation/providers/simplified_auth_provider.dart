@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/auth_user.dart';
 import '../../domain/usecases/auth_usecase.dart';
-import '../../domain/result.dart';
 
 class SimplifiedAuthProvider extends ChangeNotifier {
   final AuthUseCase _authUseCase;

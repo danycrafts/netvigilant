@@ -14,6 +14,10 @@ rootProject.layout.buildDirectory.value(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
+    tasks.withType<JavaCompile>().configureEach {
+        sourceCompatibility = "11"
+        targetCompatibility = "11"
+    }
 }
 subprojects {
     project.evaluationDependsOn(":app")

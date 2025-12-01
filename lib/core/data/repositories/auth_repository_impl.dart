@@ -1,4 +1,3 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/entities/auth_user.dart';
 import '../../domain/result.dart';

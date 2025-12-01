@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:apptobe/core/widgets/common_widgets.dart';
+import 'package:netvigilant/core/widgets/common_widgets.dart';
 
 class LoginRegisterScreen extends StatelessWidget {
   const LoginRegisterScreen({super.key});

@@ -143,7 +143,7 @@ class DualNetworkPanel extends StatelessWidget {
               Text(
                 'Updated: ${_formatTime(networkInfo.lastUpdated)}',
                 style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.6),
+                  color: colorScheme.onSurface.withAlpha(153),
                 ),
               ),
             ],
@@ -189,20 +189,20 @@ class _NoNetworkWidget extends StatelessWidget {
             Icon(
               Icons.signal_wifi_off,
               size: 64,
-              color: colorScheme.onSurface.withOpacity(0.4),
+              color: colorScheme.onSurface.withAlpha(102),
             ),
             const SizedBox(height: 16),
             Text(
               'No Network Connection',
               style: textTheme.headlineSmall?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: colorScheme.onSurface.withAlpha(153),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Please check your WiFi or mobile data connection',
               style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.4),
+                color: colorScheme.onSurface.withAlpha(102),
               ),
               textAlign: TextAlign.center,
             ),

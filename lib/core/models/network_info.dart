@@ -97,4 +97,42 @@ class NetworkInfo {
 
   bool get isConnected => status == NetworkStatus.connected;
   bool get isLoading => status == NetworkStatus.connecting;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type.index,
+      'status': status.index,
+      'localIp': localIp,
+      'localIpv6': localIpv6,
+      'publicIp': publicIp,
+      'ipDetails': ipDetails,
+      'publicIpPosition': publicIpPosition?.toJson(),
+      'ssid': ssid,
+      'operatorName': operatorName,
+      'dnsServers': dnsServers,
+      'dnsDetectionMethod': dnsDetectionMethod,
+      'interfaceName': interfaceName,
+      'lastUpdated': lastUpdated.toIso8601String(),
+    };
+  }
+
+  factory NetworkInfo.fromJson(Map<String, dynamic> json) {
+    return NetworkInfo(
+      type: NetworkType.values[json['type']],
+      status: NetworkStatus.values[json['status']],
+      localIp: json['localIp'],
+      localIpv6: json['localIpv6'],
+      publicIp: json['publicIp'],
+      ipDetails: json['ipDetails'],
+      publicIpPosition: json['publicIpPosition'] != null
+          ? LatLng.fromJson(json['publicIpPosition'])
+          : null,
+      ssid: json['ssid'],
+      operatorName: json['operatorName'],
+      dnsServers: List<String>.from(json['dnsServers']),
+      dnsDetectionMethod: json['dnsDetectionMethod'],
+      interfaceName: json['interfaceName'],
+      lastUpdated: DateTime.parse(json['lastUpdated']),
+    );
+  }
 }

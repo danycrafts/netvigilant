@@ -1,6 +1,6 @@
 {
-    "name": "apptobe",
-    "short_name": "apptobe",
+    "name": "netvigilant",
+    "short_name": "netvigilant",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
