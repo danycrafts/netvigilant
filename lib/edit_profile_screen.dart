@@ -34,6 +34,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _phoneController;
   File? _profileImage;
 
+  Future<void> _pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -104,15 +113,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       child: IconButton(
                         icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
-                        onPressed: () async {
-                          final picker = ImagePicker();
-                          final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-                          if (pickedFile != null) {
-                            setState(() {
-                              _profileImage = File(pickedFile.path);
-                            });
-                          }
-                        },
+                        onPressed: _pickImage,
                       ),
                     ),
                   ),
