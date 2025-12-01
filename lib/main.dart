@@ -5,6 +5,8 @@ import 'package:apptobe/core/providers/theme_provider.dart';
 import 'package:apptobe/core/theme/app_theme.dart';
 import 'package:apptobe/core/providers/user_profile_provider.dart';
 import 'package:apptobe/core/providers/network_provider.dart';
+import 'package:apptobe/core/providers/auth_provider.dart';
+import 'package:apptobe/auth_wrapper.dart';
 
 void main() {
   runApp(
@@ -13,6 +15,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProfileProvider()),
         ChangeNotifierProvider(create: (_) => NetworkProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: const AppToBe(),
     ),
@@ -31,7 +34,7 @@ class AppToBe extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          home: const RootPage(),
+          home: const AuthWrapper(),
         );
       },
     );

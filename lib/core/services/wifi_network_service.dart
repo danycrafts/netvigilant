@@ -3,7 +3,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:network_info_plus/network_info_plus.dart' as network_info_plus;
 import '../interfaces/network_service.dart';
 import '../models/network_info.dart' as models;
-import '../services/isolate_service.dart';
 import 'network_data_fetcher.dart';
 
 class WifiNetworkService implements INetworkService {
@@ -30,13 +29,14 @@ class WifiNetworkService implements INetworkService {
       }
     });
 
-    _monitoringTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (!_isDisposed) {
-        _fetchAndEmitNetworkInfo();
-      } else {
-        timer.cancel();
-      }
-    });
+    // Removed auto-refresh timer - only manual refresh now
+    // _monitoringTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    //   if (!_isDisposed) {
+    //     _fetchAndEmitNetworkInfo();
+    //   } else {
+    //     timer.cancel();
+    //   }
+    // });
 
     await _fetchAndEmitNetworkInfo();
   }
@@ -65,7 +65,7 @@ class WifiNetworkService implements INetworkService {
       return models.NetworkInfo.error(models.NetworkType.wifi);
     }
 
-    return await runInIsolate(_fetchWifiNetworkInfoIsolate, null);
+    return await _fetchWifiNetworkInfoIsolate(null);
   }
 
   Future<void> _fetchAndEmitNetworkInfo() async {
@@ -81,7 +81,7 @@ class WifiNetworkService implements INetworkService {
     _safeAdd(models.NetworkInfo.loading(models.NetworkType.wifi));
     
     try {
-      final networkInfo = await runInIsolate(_fetchWifiNetworkInfoIsolate, null);
+      final networkInfo = await _fetchWifiNetworkInfoIsolate(null);
       _safeAdd(networkInfo);
     } catch (e) {
       _safeAdd(models.NetworkInfo.error(models.NetworkType.wifi));

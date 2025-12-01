@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../interfaces/network_service.dart';
 import '../models/network_info.dart' as models;
-import '../services/isolate_service.dart';
 import 'network_data_fetcher.dart';
 
 class MobileNetworkService implements INetworkService {
@@ -29,13 +28,14 @@ class MobileNetworkService implements INetworkService {
       }
     });
 
-    _monitoringTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (!_isDisposed) {
-        _fetchAndEmitNetworkInfo();
-      } else {
-        timer.cancel();
-      }
-    });
+    // Removed auto-refresh timer - only manual refresh now
+    // _monitoringTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    //   if (!_isDisposed) {
+    //     _fetchAndEmitNetworkInfo();
+    //   } else {
+    //     timer.cancel();
+    //   }
+    // });
 
     await _fetchAndEmitNetworkInfo();
   }
@@ -64,7 +64,7 @@ class MobileNetworkService implements INetworkService {
       return models.NetworkInfo.error(models.NetworkType.mobile);
     }
 
-    return await runInIsolate(_fetchMobileNetworkInfoIsolate, null);
+    return await _fetchMobileNetworkInfoIsolate(null);
   }
 
   Future<void> _fetchAndEmitNetworkInfo() async {
@@ -80,7 +80,7 @@ class MobileNetworkService implements INetworkService {
     _safeAdd(models.NetworkInfo.loading(models.NetworkType.mobile));
     
     try {
-      final networkInfo = await runInIsolate(_fetchMobileNetworkInfoIsolate, null);
+      final networkInfo = await _fetchMobileNetworkInfoIsolate(null);
       _safeAdd(networkInfo);
     } catch (e) {
       _safeAdd(models.NetworkInfo.error(models.NetworkType.mobile));

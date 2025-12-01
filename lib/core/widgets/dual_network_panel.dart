@@ -22,6 +22,7 @@ class DualNetworkPanel extends StatelessWidget {
         return Column(
           children: [
             _buildNetworkStatusHeader(networkProvider),
+            _buildRefreshHeader(context, networkProvider),
             const SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(
@@ -33,6 +34,7 @@ class DualNetworkPanel extends StatelessWidget {
                         'WiFi Network',
                         networkProvider.wifiNetworkInfo!,
                         Icons.wifi,
+                        networkProvider,
                       ),
                       if (hasMobile && networkProvider.mobileNetworkInfo != null)
                         const SizedBox(height: 16),
@@ -43,6 +45,7 @@ class DualNetworkPanel extends StatelessWidget {
                         'Mobile Network',
                         networkProvider.mobileNetworkInfo!,
                         Icons.signal_cellular_alt,
+                        networkProvider,
                       ),
                     ],
                   ],
@@ -84,11 +87,38 @@ class DualNetworkPanel extends StatelessWidget {
     );
   }
 
+  Widget _buildRefreshHeader(BuildContext context, NetworkProvider networkProvider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Network Information',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => networkProvider.refreshNetworkInfo(),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('Refresh'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNetworkSection(
     BuildContext context,
     String title,
     NetworkInfo networkInfo,
     IconData icon,
+    NetworkProvider networkProvider,
   ) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
@@ -119,7 +149,10 @@ class DualNetworkPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          NetworkDetailsCard(networkInfo: networkInfo),
+          NetworkDetailsCard(
+            networkInfo: networkInfo,
+            onRefresh: () => networkProvider.refreshNetworkInfo(),
+          ),
         ],
       ),
     );

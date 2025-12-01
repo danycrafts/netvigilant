@@ -8,10 +8,12 @@ import '../models/network_info.dart';
 
 class NetworkDetailsCard extends StatefulWidget {
   final NetworkInfo networkInfo;
+  final VoidCallback? onRefresh;
 
   const NetworkDetailsCard({
     super.key,
     required this.networkInfo,
+    this.onRefresh,
   });
 
   @override
@@ -20,19 +22,15 @@ class NetworkDetailsCard extends StatefulWidget {
 
 class _NetworkDetailsCardState extends State<NetworkDetailsCard> {
   String _downloadSpeed = '0.00 Mbps';
-  String _uploadSpeed = 'N/A';
+  String _uploadSpeed = '0.00 Mbps';
   Timer? _speedTestTimer;
   final Dio _dio = Dio();
 
   @override
   void initState() {
     super.initState();
+    // Initial speed test only, no auto-refresh
     if (widget.networkInfo.isConnected) {
-      _speedTestTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-        if (mounted && widget.networkInfo.isConnected) {
-          _runSpeedTests();
-        }
-      });
       _runSpeedTests();
     }
   }
@@ -47,6 +45,12 @@ class _NetworkDetailsCardState extends State<NetworkDetailsCard> {
   Future<void> _runSpeedTests() async {
     await _runDownloadTest();
     await _runUploadTest();
+  }
+
+  void refreshSpeedTests() {
+    if (widget.networkInfo.isConnected) {
+      _runSpeedTests();
+    }
   }
 
   Future<void> _runDownloadTest() async {
@@ -69,7 +73,7 @@ class _NetworkDetailsCardState extends State<NetworkDetailsCard> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _downloadSpeed = 'Error';
+          _downloadSpeed = '0.00 Mbps';
         });
       }
     } finally {
@@ -106,7 +110,7 @@ class _NetworkDetailsCardState extends State<NetworkDetailsCard> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _uploadSpeed = 'Error';
+          _uploadSpeed = '0.00 Mbps';
         });
       }
     } finally {

@@ -50,7 +50,6 @@ dependencies:
   shimmer: ^3.0.0
   device_apps: ^2.2.0
   permission_handler: ^11.0.1
-  usage_tracker: ^0.1.0
 
 dev_dependencies:
   flutter_test:
