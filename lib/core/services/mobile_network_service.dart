@@ -20,15 +20,21 @@ class MobileNetworkService implements INetworkService {
   @override
   Future<void> startMonitoring() async {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
-      if (result.contains(ConnectivityResult.mobile)) {
-        _fetchAndEmitNetworkInfo();
-      } else {
-        _safeAdd(models.NetworkInfo.error(models.NetworkType.mobile));
+      if (!_isDisposed) {
+        if (result.contains(ConnectivityResult.mobile)) {
+          _fetchAndEmitNetworkInfo();
+        } else {
+          _safeAdd(models.NetworkInfo.error(models.NetworkType.mobile));
+        }
       }
     });
 
     _monitoringTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _fetchAndEmitNetworkInfo();
+      if (!_isDisposed) {
+        _fetchAndEmitNetworkInfo();
+      } else {
+        timer.cancel();
+      }
     });
 
     await _fetchAndEmitNetworkInfo();
@@ -62,10 +68,12 @@ class MobileNetworkService implements INetworkService {
   }
 
   Future<void> _fetchAndEmitNetworkInfo() async {
+    if (_isDisposed) return; // Early return if disposed
+    
     final connectivity = await Connectivity().checkConnectivity();
     
     if (!connectivity.contains(ConnectivityResult.mobile)) {
-      _networkInfoController.add(models.NetworkInfo.error(models.NetworkType.mobile));
+      _safeAdd(models.NetworkInfo.error(models.NetworkType.mobile));
       return;
     }
 
@@ -75,7 +83,7 @@ class MobileNetworkService implements INetworkService {
       final networkInfo = await runInIsolate(_fetchMobileNetworkInfoIsolate, null);
       _safeAdd(networkInfo);
     } catch (e) {
-      _networkInfoController.add(models.NetworkInfo.error(models.NetworkType.mobile));
+      _safeAdd(models.NetworkInfo.error(models.NetworkType.mobile));
     }
   }
 

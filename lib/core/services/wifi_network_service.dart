@@ -21,15 +21,21 @@ class WifiNetworkService implements INetworkService {
   @override
   Future<void> startMonitoring() async {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
-      if (result.contains(ConnectivityResult.wifi)) {
-        _fetchAndEmitNetworkInfo();
-      } else {
-        _safeAdd(models.NetworkInfo.error(models.NetworkType.wifi));
+      if (!_isDisposed) {
+        if (result.contains(ConnectivityResult.wifi)) {
+          _fetchAndEmitNetworkInfo();
+        } else {
+          _safeAdd(models.NetworkInfo.error(models.NetworkType.wifi));
+        }
       }
     });
 
     _monitoringTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _fetchAndEmitNetworkInfo();
+      if (!_isDisposed) {
+        _fetchAndEmitNetworkInfo();
+      } else {
+        timer.cancel();
+      }
     });
 
     await _fetchAndEmitNetworkInfo();
@@ -63,10 +69,12 @@ class WifiNetworkService implements INetworkService {
   }
 
   Future<void> _fetchAndEmitNetworkInfo() async {
+    if (_isDisposed) return; // Early return if disposed
+    
     final connectivity = await Connectivity().checkConnectivity();
     
     if (!connectivity.contains(ConnectivityResult.wifi)) {
-      _networkInfoController.add(models.NetworkInfo.error(models.NetworkType.wifi));
+      _safeAdd(models.NetworkInfo.error(models.NetworkType.wifi));
       return;
     }
 
@@ -76,7 +84,7 @@ class WifiNetworkService implements INetworkService {
       final networkInfo = await runInIsolate(_fetchWifiNetworkInfoIsolate, null);
       _safeAdd(networkInfo);
     } catch (e) {
-      _networkInfoController.add(models.NetworkInfo.error(models.NetworkType.wifi));
+      _safeAdd(models.NetworkInfo.error(models.NetworkType.wifi));
     }
   }
 

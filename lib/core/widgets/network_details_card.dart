@@ -88,7 +88,10 @@ class _NetworkDetailsCardState extends State<NetworkDetailsCard> {
         uploadUrl,
         data: Stream.fromIterable(dataToUpload.map((e) => [e])),
         options: Options(
-          headers: {'Content-Length': dataToUpload.length.toString()},
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': dataToUpload.length.toString(),
+          },
         ),
         onSendProgress: (sent, total) {
           if (stopwatch.elapsed.inSeconds > 0 && mounted) {
