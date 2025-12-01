@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:apptobe/core/providers/auth_provider.dart';
-import 'package:apptobe/login_screen.dart';
-import 'package:apptobe/register_screen.dart';
-import 'package:apptobe/navigation/root_page.dart';
-import 'package:apptobe/core/services/permission_manager.dart';
+import 'package:netvigilant/core/providers/auth_provider.dart';
+import 'package:netvigilant/login_screen.dart';
+import 'package:netvigilant/register_screen.dart';
+import 'package:netvigilant/navigation/root_page.dart';
+import 'package:netvigilant/core/services/permission_manager.dart';
 import 'dart:io';
 
 class AuthWrapper extends StatefulWidget {

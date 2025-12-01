@@ -1,13 +1,13 @@
-import 'package:apptobe/edit_profile_screen.dart';
-import 'package:apptobe/login_screen.dart';
-import 'package:apptobe/register_screen.dart';
+import 'package:netvigilant/edit_profile_screen.dart';
+import 'package:netvigilant/login_screen.dart';
+import 'package:netvigilant/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:apptobe/core/providers/theme_provider.dart';
-import 'package:apptobe/core/providers/user_profile_provider.dart';
-import 'package:apptobe/core/providers/auth_provider.dart';
-import 'package:apptobe/core/widgets/common_widgets.dart';
-import 'package:apptobe/core/constants/app_constants.dart';
+import 'package:netvigilant/core/providers/theme_provider.dart';
+import 'package:netvigilant/core/providers/user_profile_provider.dart';
+import 'package:netvigilant/core/providers/auth_provider.dart';
+import 'package:netvigilant/core/widgets/common_widgets.dart';
+import 'package:netvigilant/core/constants/app_constants.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
