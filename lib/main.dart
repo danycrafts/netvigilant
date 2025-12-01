@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:apptobe/core/providers/theme_provider.dart';
 import 'package:apptobe/core/theme/app_theme.dart';
 import 'package:apptobe/core/providers/user_profile_provider.dart';
+import 'package:apptobe/core/providers/network_provider.dart';
 
 void main() {
   runApp(
@@ -11,6 +12,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProfileProvider()),
+        ChangeNotifierProvider(create: (_) => NetworkProvider()),
       ],
       child: const AppToBe(),
     ),

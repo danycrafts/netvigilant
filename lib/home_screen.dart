@@ -1,14 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
 import 'package:apptobe/core/services/location_service.dart';
-import 'package:apptobe/network_info_panel.dart';
-import 'package:http/http.dart' as http;
-import 'package:network_info_plus/network_info_plus.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:apptobe/core/services/isolate_service.dart';
+import 'package:apptobe/core/providers/network_provider.dart';
+import 'package:apptobe/core/widgets/dual_network_panel.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.title});
@@ -19,20 +15,6 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-// Data class to hold network info results from the isolate
-class NetworkInfoResult {
-  final String localIp;
-  final String publicIp;
-  final String ipDetails;
-  final LatLng? publicIpPosition;
-
-  NetworkInfoResult({
-    required this.localIp,
-    required this.publicIp,
-    required this.ipDetails,
-    this.publicIpPosition,
-  });
-}
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
@@ -40,13 +22,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   LatLng? _currentPosition;
   LatLng? _publicIpPosition;
   bool _isLoading = true;
-
-  // Network Info Panel State
-  String _publicIp = 'Fetching...';
-  String _ipDetails = 'Fetching...';
-  String _localIp = 'Fetching...';
-  String _connectionType = '...';
-  bool _isNetworkInfoLoading = true;
+  NetworkProvider? _networkProvider;
+  VoidCallback? _networkProviderListener;
 
   late final AnimationController _greenMarkerController;
   late final AnimationController _blueMarkerController;
@@ -66,9 +43,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Safely get reference to NetworkProvider
+    if (_networkProvider == null) {
+      _networkProvider = context.read<NetworkProvider>();
+      _networkProvider!.startMonitoring();
+      _setupNetworkProviderListener();
+    }
+  }
+
+  @override
   void dispose() {
     _greenMarkerController.dispose();
     _blueMarkerController.dispose();
+    
+    // Safely clean up NetworkProvider
+    if (_networkProviderListener != null && _networkProvider != null) {
+      _networkProvider!.removeListener(_networkProviderListener!);
+    }
+    _networkProvider?.stopMonitoring();
+    
     super.dispose();
   }
 
@@ -81,81 +77,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     }
 
-    // Fetch local and public IP info
-    await _fetchNetworkInfo();
-
-    // Adjust camera if both points are available
-    if (_currentPosition != null && _publicIpPosition != null) {
-      _fitBounds();
-    }
+    // Network provider listener is set up in didChangeDependencies
   }
 
-  Future<void> _fetchNetworkInfo() async {
-    final connectivityResult = await (Connectivity().checkConnectivity());
-    if (mounted) {
-      setState(() {
-        _connectionType = connectivityResult.contains(ConnectivityResult.wifi) ? 'WiFi' : (connectivityResult.contains(ConnectivityResult.mobile) ? 'Mobile' : 'Offline');
-      });
-    }
+  void _setupNetworkProviderListener() {
+    if (_networkProvider == null) return;
     
-    // Run network fetching in a background isolate
-    final result = await runInIsolate(_fetchNetworkDataIsolate, connectivityResult);
-
-    if (mounted) {
-      setState(() {
-        _localIp = result.localIp;
-        _publicIp = result.publicIp;
-        _ipDetails = result.ipDetails;
-        _publicIpPosition = result.publicIpPosition;
-        _isNetworkInfoLoading = false;
-      });
-    }
-  }
-
-  // This static function will be sent to the isolate.
-  // It cannot access any instance members of _HomeScreenState.
-  static Future<NetworkInfoResult> _fetchNetworkDataIsolate(List<ConnectivityResult> connectivityResult) async {
-    String localIp = 'Error';
-    String publicIp = 'Error';
-    String ipDetails = 'N/A';
-    LatLng? publicIpPosition;
-
-    try {
-      // This will fetch the device's IP on the local network.
-      // It works primarily on WiFi. If not on WiFi, it will result in a null,
-      // which is the correct behavior for non-local network types like Mobile Data.
-      final networkInfo = NetworkInfo();
-      localIp = await networkInfo.getWifiIP() ?? 'N/A (Not on WiFi)';
-    } catch (e) {
-      // If there's an error fetching, we'll report it.
-      localIp = 'Error';
-    }
-
-    try {
-      final ipResponse = await http.get(Uri.parse('https://api.ipify.org?format=json'));
-      if (ipResponse.statusCode == 200) {
-        publicIp = json.decode(ipResponse.body)['ip'];
-
-        final detailsResponse = await http.get(Uri.parse('http://ip-api.com/json/$publicIp'));
-        if (detailsResponse.statusCode == 200) {
-          final details = json.decode(detailsResponse.body);
-          ipDetails = '${details['org'] ?? 'N/A'}\n${details['isp'] ?? 'N/A'}\n${details['country'] ?? 'N/A'}';
-          publicIpPosition = LatLng(details['lat'], details['lon']);
-        } else {
-          ipDetails = 'Details unavailable';
+    _networkProviderListener = () {
+      if (!mounted) return;
+      
+      LatLng? newPublicIpPosition;
+      
+      // Get public IP position from either WiFi or Mobile network info
+      if (_networkProvider!.wifiNetworkInfo?.publicIpPosition != null) {
+        newPublicIpPosition = _networkProvider!.wifiNetworkInfo!.publicIpPosition;
+      } else if (_networkProvider!.mobileNetworkInfo?.publicIpPosition != null) {
+        newPublicIpPosition = _networkProvider!.mobileNetworkInfo!.publicIpPosition;
+      }
+      
+      if (newPublicIpPosition != null && newPublicIpPosition != _publicIpPosition) {
+        setState(() {
+          _publicIpPosition = newPublicIpPosition;
+        });
+        
+        // Adjust camera if both points are available
+        if (_currentPosition != null) {
+          _fitBounds();
         }
       }
-    } catch (e) {
-      // ignore
-    }
-
-    return NetworkInfoResult(
-      localIp: localIp,
-      publicIp: publicIp,
-      ipDetails: ipDetails,
-      publicIpPosition: publicIpPosition,
-    );
+    };
+    
+    _networkProvider!.addListener(_networkProviderListener!);
   }
+
 
   void _zoomIn() {
     _mapController.move(
@@ -277,17 +231,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
           ),
-          Expanded(
-            child: Container(
-              child: NetworkInfoPanel(
-                publicIp: _publicIp,
-                ipDetails: _ipDetails,
-                localIp: _localIp,
-                connectionType: _connectionType,
-                isLoading: _isNetworkInfoLoading,
-                publicIpPosition: _publicIpPosition,
-              ),
-            ),
+          const Expanded(
+            child: DualNetworkPanel(),
           ),
         ],
       ),
