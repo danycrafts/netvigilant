@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:apptobe/core/widgets/common_widgets.dart';
 import 'package:apptobe/core/constants/app_constants.dart';
 
@@ -32,6 +33,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
   File? _profileImage;
+
+  Future<void> _pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -103,9 +113,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       child: IconButton(
                         icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
-                        onPressed: () {
-                          // TODO: Implement image picker
-                        },
+                        onPressed: _pickImage,
                       ),
                     ),
                   ),

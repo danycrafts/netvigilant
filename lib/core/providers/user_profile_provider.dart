@@ -92,4 +92,15 @@ class UserProfileProvider extends ChangeNotifier {
       }
     }
   }
+
+  void clearProfile() {
+    _userProfile = UserProfile(
+      firstName: 'User',
+      lastName: 'Name',
+      username: 'username',
+      email: 'user.name@example.com',
+      phone: '',
+    );
+    notifyListeners();
+  }
 }

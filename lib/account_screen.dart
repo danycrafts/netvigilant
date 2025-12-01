@@ -1,4 +1,5 @@
 import 'package:apptobe/edit_profile_screen.dart';
+import 'package:apptobe/login_register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:apptobe/core/providers/theme_provider.dart';
@@ -100,7 +101,10 @@ class _AccountScreenState extends State<AccountScreen> {
             leading: const Icon(Icons.login),
             title: const Text('Login / Register'),
             onTap: () {
-              // TODO: Navigate to Login/Register page
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginRegisterScreen()),
+              );
             },
           ),
           const Divider(),
@@ -156,7 +160,30 @@ class _AccountScreenState extends State<AccountScreen> {
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
             onTap: () {
-              // TODO: Implement logout logic
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Logout'),
+                    content: const Text('Are you sure you want to logout?'),
+                    actions: <Widget>[
+                      TextButton(
+                        child: const Text('Cancel'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      TextButton(
+                        child: const Text('Logout'),
+                        onPressed: () {
+                          Provider.of<UserProfileProvider>(context, listen: false).clearProfile();
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
             },
           ),
         ],
