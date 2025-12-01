@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:usage_stats/usage_stats.dart';
 import 'package:netvigilant/core/services/permission_manager.dart';
 
@@ -36,14 +37,14 @@ class AppUsageService {
           return AppUsageInfo(
             totalTimeInForeground:
                 Duration(milliseconds: int.parse(appUsage.totalTimeInForeground!)),
-            launchCount: int.parse(appUsage.appLaunchCount!),
+            launchCount: 1, // usage_stats doesn't provide launch count, using 1 as default
             lastTimeUsed:
                 DateTime.fromMillisecondsSinceEpoch(int.parse(appUsage.lastTimeUsed!)),
           );
         }
       }
     } catch (e) {
-      print('Error fetching app usage info: $e');
+      debugPrint('Error fetching app usage info: $e');
     }
     return null;
   }
