@@ -1,15 +1,19 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:network_info_plus/network_info_plus.dart' as network_info_plus;
 import '../interfaces/network_service.dart';
 import '../models/network_info.dart' as models;
 import 'network_data_fetcher.dart';
 
+import 'cache_service.dart';
+
 class WifiNetworkService implements INetworkService {
   final StreamController<models.NetworkInfo> _networkInfoController = StreamController<models.NetworkInfo>.broadcast();
   Timer? _monitoringTimer;
   StreamSubscription? _connectivitySubscription;
   bool _isDisposed = false;
+  final CacheService<models.NetworkInfo> _cache = CacheService<models.NetworkInfo>(const Duration(minutes: 5));
   
   @override
   models.NetworkType get networkType => models.NetworkType.wifi;
@@ -59,18 +63,31 @@ class WifiNetworkService implements INetworkService {
 
   @override
   Future<models.NetworkInfo> getCurrentNetworkInfo() async {
+    final cachedInfo = _cache.get('wifi_info');
+    if (cachedInfo != null) {
+      return cachedInfo;
+    }
+
     final connectivity = await Connectivity().checkConnectivity();
     
     if (!connectivity.contains(ConnectivityResult.wifi)) {
       return models.NetworkInfo.error(models.NetworkType.wifi);
     }
 
-    return await _fetchWifiNetworkInfoIsolate(null);
+    final networkInfo = await compute(_fetchWifiNetworkInfoIsolate, null);
+    _cache.set('wifi_info', networkInfo);
+    return networkInfo;
   }
 
   Future<void> _fetchAndEmitNetworkInfo() async {
     if (_isDisposed) return; // Early return if disposed
     
+    final cachedInfo = _cache.get('wifi_info');
+    if (cachedInfo != null) {
+      _safeAdd(cachedInfo);
+      return;
+    }
+
     final connectivity = await Connectivity().checkConnectivity();
     
     if (!connectivity.contains(ConnectivityResult.wifi)) {
@@ -81,7 +98,8 @@ class WifiNetworkService implements INetworkService {
     _safeAdd(models.NetworkInfo.loading(models.NetworkType.wifi));
     
     try {
-      final networkInfo = await _fetchWifiNetworkInfoIsolate(null);
+      final networkInfo = await compute(_fetchWifiNetworkInfoIsolate, null);
+      _cache.set('wifi_info', networkInfo);
       _safeAdd(networkInfo);
     } catch (e) {
       _safeAdd(models.NetworkInfo.error(models.NetworkType.wifi));

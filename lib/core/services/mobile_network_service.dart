@@ -1,14 +1,18 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../interfaces/network_service.dart';
 import '../models/network_info.dart' as models;
 import 'network_data_fetcher.dart';
+
+import 'cache_service.dart';
 
 class MobileNetworkService implements INetworkService {
   final StreamController<models.NetworkInfo> _networkInfoController = StreamController<models.NetworkInfo>.broadcast();
   Timer? _monitoringTimer;
   StreamSubscription? _connectivitySubscription;
   bool _isDisposed = false;
+  final CacheService<models.NetworkInfo> _cache = CacheService<models.NetworkInfo>(const Duration(minutes: 5));
   
   @override
   models.NetworkType get networkType => models.NetworkType.mobile;
@@ -58,18 +62,31 @@ class MobileNetworkService implements INetworkService {
 
   @override
   Future<models.NetworkInfo> getCurrentNetworkInfo() async {
+    final cachedInfo = _cache.get('mobile_info');
+    if (cachedInfo != null) {
+      return cachedInfo;
+    }
+
     final connectivity = await Connectivity().checkConnectivity();
     
     if (!connectivity.contains(ConnectivityResult.mobile)) {
       return models.NetworkInfo.error(models.NetworkType.mobile);
     }
 
-    return await _fetchMobileNetworkInfoIsolate(null);
+    final networkInfo = await compute(_fetchMobileNetworkInfoIsolate, null);
+    _cache.set('mobile_info', networkInfo);
+    return networkInfo;
   }
 
   Future<void> _fetchAndEmitNetworkInfo() async {
     if (_isDisposed) return; // Early return if disposed
     
+    final cachedInfo = _cache.get('mobile_info');
+    if (cachedInfo != null) {
+      _safeAdd(cachedInfo);
+      return;
+    }
+
     final connectivity = await Connectivity().checkConnectivity();
     
     if (!connectivity.contains(ConnectivityResult.mobile)) {
@@ -80,7 +97,8 @@ class MobileNetworkService implements INetworkService {
     _safeAdd(models.NetworkInfo.loading(models.NetworkType.mobile));
     
     try {
-      final networkInfo = await _fetchMobileNetworkInfoIsolate(null);
+      final networkInfo = await compute(_fetchMobileNetworkInfoIsolate, null);
+      _cache.set('mobile_info', networkInfo);
       _safeAdd(networkInfo);
     } catch (e) {
       _safeAdd(models.NetworkInfo.error(models.NetworkType.mobile));

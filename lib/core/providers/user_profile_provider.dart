@@ -18,16 +18,23 @@ class UserProfileProvider extends ChangeNotifier {
   
   late final IUserRepository _userRepository;
   bool _isLoading = false;
+  String? _errorMessage;
 
   UserProfile get userProfile => _userProfile;
   bool get emailNotifications => _emailNotifications;
   bool get phoneNotifications => _phoneNotifications;
   bool get pushNotifications => _pushNotifications;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
   UserProfileProvider({IUserRepository? userRepository}) {
     _userRepository = userRepository ?? UserRepository();
     _loadUserData();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
   }
 
   Future<void> _loadUserData() async {
@@ -44,6 +51,7 @@ class UserProfileProvider extends ChangeNotifier {
       if (kDebugMode) {
         print('Error loading user data: $e');
       }
+      _errorMessage = 'Failed to load user data. Please try again later.';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -59,6 +67,7 @@ class UserProfileProvider extends ChangeNotifier {
       if (kDebugMode) {
         print('Error updating profile: $e');
       }
+      _errorMessage = 'Failed to update profile. Please try again.';
     }
   }
 
@@ -90,6 +99,7 @@ class UserProfileProvider extends ChangeNotifier {
       if (kDebugMode) {
         print('Error updating notification settings: $e');
       }
+      _errorMessage = 'Failed to update notification settings. Please try again.';
     }
   }
 
