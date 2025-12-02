@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'app_usage_service.dart';
 
 /// SOLID: Single responsibility for permission state management
@@ -81,15 +82,14 @@ class PermissionManager {
     return await AppUsageService.hasUsagePermission();
   }
 
-  /// Check if location permission is granted (placeholder implementation)
+  /// Check if location permission is granted
   static Future<bool> hasLocationPermission() async {
-    // TODO: Implement actual location permission check
-    return false;
+    return await Permission.location.isGranted;
   }
 
-  /// Request location permission (placeholder implementation)
+  /// Request location permission
   static Future<bool> requestLocationPermission() async {
-    // TODO: Implement actual location permission request
-    return false;
+    final status = await Permission.location.request();
+    return status.isGranted;
   }
 }

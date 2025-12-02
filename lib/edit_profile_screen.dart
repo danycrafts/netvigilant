@@ -85,10 +85,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           onPressed: _saveProfile,
           child: Text(
             'Save',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
           ),
         ),
       ],
