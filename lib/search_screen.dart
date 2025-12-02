@@ -8,8 +8,11 @@ import 'package:apptobe/core/services/permission_manager.dart';
 import 'package:apptobe/core/services/cached_app_service.dart';
 import 'package:apptobe/core/architecture/base_widgets/base_screen.dart';
 import 'package:apptobe/core/architecture/dependency_injection/service_locator.dart';
-import 'package:apptobe/core/architecture/interfaces/repository_interfaces.dart';
-import 'package:apptobe/core/architecture/interfaces/service_interfaces.dart';
+import 'package:apptobe/core/interfaces/app_repository.dart';
+import 'package:apptobe/core/interfaces/app_usage_repository.dart';
+import 'package:apptobe/core/interfaces/permission_repository.dart';
+import 'package:apptobe/core/interfaces/notification_service.dart';
+import 'package:apptobe/core/models/cached_app_info.dart';
 
 class SearchScreen extends BaseScreen {
   const SearchScreen({super.key});
@@ -42,6 +45,10 @@ class _SearchScreenState extends State<SearchScreen>
     with WidgetsBindingObserver, LoadingScreenMixin, ErrorHandlingMixin {
   final TextEditingController _searchController = TextEditingController();
   final CachedAppService _appService = CachedAppService();
+  late final IAppRepository _appRepository;
+  late final IUsageRepository _usageRepository;
+  late final IPermissionRepository _permissionRepository;
+  late final INotificationService _notificationService;
   List<CachedAppInfo> _apps = [];
   List<CachedAppInfo> _filteredApps = [];
   bool _hasUsagePermission = false;
@@ -55,10 +62,10 @@ class _SearchScreenState extends State<SearchScreen>
     WidgetsBinding.instance.addObserver(this);
     
     // SOLID - Initialize dependencies
-    _appRepository = ServiceLocator.get<IAppRepository>();
-    _usageRepository = ServiceLocator.get<IUsageRepository>();
-    _permissionRepository = ServiceLocator.get<IPermissionRepository>();
-    _notificationService = ServiceLocator.get<INotificationService>();
+    _appRepository = getIt<IAppRepository>();
+    _usageRepository = getIt<IUsageRepository>();
+    _permissionRepository = getIt<IPermissionRepository>();
+    _notificationService = getIt<INotificationService>();
     
     _initializeScreen();
     _searchController.addListener(_filterApps);
@@ -78,18 +85,6 @@ class _SearchScreenState extends State<SearchScreen>
         _fetchApps(),
         _checkUsagePermission(),
       ]);
-    } catch (error) {
-      handleError(error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  Future<void> _refreshApps() async {
-    setLoading(true);
-    try {
-      await _fetchApps(forceRefresh: true);
-      handleSuccess('Apps refreshed successfully');
     } catch (error) {
       handleError(error);
     } finally {
@@ -117,7 +112,6 @@ class _SearchScreenState extends State<SearchScreen>
         setState(() {
           _apps = apps;
           _filteredApps = apps;
-          _isLoading = false;
         });
       }
     } catch (e) {
@@ -137,6 +131,12 @@ class _SearchScreenState extends State<SearchScreen>
       _filteredApps = _apps.where((appInfo) {
         return appInfo.app.appName.toLowerCase().contains(query);
       }).toList();
+    });
+  }
+
+  void setShowUsageInGrid(bool value) {
+    setState(() {
+      _showUsageInGrid = value;
     });
   }
 
@@ -161,7 +161,7 @@ class _SearchScreenState extends State<SearchScreen>
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        color: Theme.of(context).colorScheme.primary.withAlpha((255 * 0.2).round()),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -210,14 +210,15 @@ class _SearchScreenState extends State<SearchScreen>
                       onPressed: () async {
                         final granted = await PermissionManager.requestAndStoreUsagePermission();
                         await _checkUsagePermission();
-                        if (mounted && granted) {
+                        if (!mounted) return;
+                        if (granted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Usage permission granted successfully!'),
                               backgroundColor: Colors.green,
                             ),
                           );
-                        } else if (mounted && !granted) {
+                        } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Permission denied. Please enable it in settings.'),
@@ -233,14 +234,13 @@ class _SearchScreenState extends State<SearchScreen>
                       onPressed: () async {
                         await PermissionManager.revokeUsagePermission();
                         await _checkUsagePermission();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Usage permission revoked'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        }
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Usage permission revoked'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
                       },
                       child: const Text('Revoke Permission'),
                     ),
@@ -368,7 +368,7 @@ class _SearchScreenState extends State<SearchScreen>
         Icon(
           icon,
           size: 14,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.7).round()),
         ),
         const SizedBox(width: 8),
         SizedBox(
@@ -403,17 +403,6 @@ class _SearchScreenState extends State<SearchScreen>
       return '${difference.inMinutes} minutes ago';
     } else {
       return 'Just now';
-    }
-  }
-
-  String _formatUsageForGrid(AppUsageInfo usageInfo) {
-    final duration = usageInfo.totalTimeInForeground;
-    if (duration.inHours > 0) {
-      return '${duration.inHours}h';
-    } else if (duration.inMinutes > 0) {
-      return '${duration.inMinutes}m';
-    } else {
-      return '${duration.inSeconds}s';
     }
   }
 
@@ -473,16 +462,18 @@ class _SearchScreenBody extends StatelessWidget {
         const SizedBox(width: 8),
         Switch(
           value: searchState?._showUsageInGrid ?? false,
-          onChanged: (searchState?._hasUsagePermission ?? false) ? (value) {
-            searchState?.setState(() => searchState._showUsageInGrid = value);
-          } : null,
+          onChanged: (searchState?._hasUsagePermission ?? false)
+              ? (value) {
+                  searchState?.setShowUsageInGrid(value);
+                }
+              : null,
         ),
         const Spacer(),
         if (!(searchState?._hasUsagePermission ?? true))
           Text(
             'Grant usage permission to show usage stats',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
             ),
           ),
       ],
@@ -608,7 +599,7 @@ class _AppGridItem extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.surface.withAlpha((255 * 0.5).round()),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -642,7 +633,7 @@ class _AppGridItem extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.primary.withAlpha((255 * 0.2).round()),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -693,4 +684,3 @@ class _AppGridItem extends StatelessWidget {
     }
   }
 }
-

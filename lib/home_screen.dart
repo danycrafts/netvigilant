@@ -9,11 +9,13 @@ import 'package:apptobe/core/widgets/adaptive_quick_apps_widget.dart';
 import 'package:apptobe/core/widgets/adaptive_analytics_widget.dart';
 import 'package:apptobe/core/architecture/base_widgets/base_screen.dart';
 import 'package:apptobe/core/architecture/dependency_injection/service_locator.dart';
-import 'package:apptobe/core/architecture/interfaces/repository_interfaces.dart';
+import 'package:apptobe/core/interfaces/location_repository.dart';
+import 'package:apptobe/core/interfaces/cache_repository.dart';
 
 class HomeScreen extends BaseScreen {
   const HomeScreen({super.key, required this.title});
 
+  @override
   final String title;
 
   @override
@@ -40,6 +42,8 @@ class HomeScreen extends BaseScreen {
 class _HomeScreenState extends State<HomeScreen> 
     with LoadingScreenMixin, ErrorHandlingMixin {
   final CachedLocationService _locationService = CachedLocationService();
+  late final ILocationRepository _locationRepository;
+  late final ICacheRepository _cacheRepository;
   LatLng? _currentPosition;
   LatLng? _publicIpPosition;
   NetworkProvider? _networkProvider;
@@ -51,8 +55,8 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     // SOLID - Initialize dependencies through service locator
-    _locationRepository = ServiceLocator.get<ILocationRepository>();
-    _cacheRepository = ServiceLocator.get<ICacheRepository>();
+    _locationRepository = getIt<ILocationRepository>();
+    _cacheRepository = getIt<ICacheRepository>();
     _initializeScreen();
   }
 
@@ -98,19 +102,6 @@ class _HomeScreenState extends State<HomeScreen>
     final position = await _locationService.getCurrentPosition();
     if (mounted) {
       setState(() => _currentPosition = position);
-    }
-  }
-
-  Future<void> _refreshData() async {
-    setLoading(true);
-    try {
-      await _determinePosition();
-      await _networkProvider?.refreshNetworkInfo();
-      handleSuccess('Data refreshed successfully');
-    } catch (error) {
-      handleError(error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -183,7 +174,7 @@ class _HomeScreenBody extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha((255 * 0.1).round()),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

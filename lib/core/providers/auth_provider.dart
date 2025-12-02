@@ -7,15 +7,22 @@ class AuthProvider extends ChangeNotifier {
   bool _isGuestMode = false;
   String? _userEmail;
   String? _userId;
+  String? _errorMessage;
 
   bool get isLoggedIn => _isLoggedIn;
   bool get isLoading => _isLoading;
   bool get isGuestMode => _isGuestMode;
   String? get userEmail => _userEmail;
   String? get userId => _userId;
+  String? get errorMessage => _errorMessage;
 
   AuthProvider() {
     _loadAuthState();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
   }
 
   Future<void> _loadAuthState() async {
@@ -38,6 +45,19 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _performLogin(String email) async {
+    _isLoggedIn = true;
+    _isGuestMode = false;
+    _userEmail = email;
+    _userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', true);
+    await prefs.remove('is_guest_mode');
+    await prefs.setString('user_email', email);
+    await prefs.setString('user_id', _userId!);
+  }
+
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     notifyListeners();
@@ -46,17 +66,7 @@ class AuthProvider extends ChangeNotifier {
       await Future.delayed(const Duration(seconds: 1));
       
       if (email.isNotEmpty && password.length >= 6) {
-        _isLoggedIn = true;
-        _isGuestMode = false;
-        _userEmail = email;
-        _userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('is_logged_in', true);
-        await prefs.remove('is_guest_mode');
-        await prefs.setString('user_email', email);
-        await prefs.setString('user_id', _userId!);
-
+        await _performLogin(email);
         _isLoading = false;
         notifyListeners();
         return true;
@@ -65,6 +75,7 @@ class AuthProvider extends ChangeNotifier {
       if (kDebugMode) {
         print('Login error: $e');
       }
+      _errorMessage = 'An unexpected error occurred. Please try again.';
     }
 
     _isLoading = false;
@@ -82,25 +93,18 @@ class AuthProvider extends ChangeNotifier {
       if (email.isNotEmpty && 
           password.length >= 6 && 
           password == confirmPassword) {
-        _isLoggedIn = true;
-        _isGuestMode = false;
-        _userEmail = email;
-        _userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('is_logged_in', true);
-        await prefs.remove('is_guest_mode');
-        await prefs.setString('user_email', email);
-        await prefs.setString('user_id', _userId!);
-
+        await _performLogin(email);
         _isLoading = false;
         notifyListeners();
         return true;
+      } else {
+        _errorMessage = 'Please check your registration details and try again.';
       }
     } catch (e) {
       if (kDebugMode) {
         print('Registration error: $e');
       }
+      _errorMessage = 'An unexpected error occurred. Please try again.';
     }
 
     _isLoading = false;

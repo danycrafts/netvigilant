@@ -3,65 +3,52 @@ import 'package:apptobe/core/services/cache_service.dart';
 
 void main() {
   group('CacheService', () {
-    late CacheService cacheService;
+    late CacheService<String> cacheService;
 
     setUp(() {
-      cacheService = CacheService();
+      cacheService = CacheService<String>(const Duration(seconds: 1));
     });
 
-    tearDown(() async {
-      await cacheService.clear();
+    test('should store and retrieve a value', () {
+      cacheService.set('key', 'value');
+      expect(cacheService.get('key'), 'value');
     });
 
-    group('Basic Operations', () {
-      test('should store and retrieve data from memory cache', () async {
-        // TODO: Implement test for basic cache set/get operations
-        // - Test storing data with TTL
-        // - Test retrieving data before expiration
-        // - Test data expiration after TTL
-      });
-
-      test('should handle cache miss gracefully', () async {
-        // TODO: Implement test for cache miss scenarios
-        // - Test getting non-existent keys
-        // - Test getting expired data
-      });
-
-      test('should support different data types', () async {
-        // TODO: Implement tests for different data types
-        // - Test String, int, bool, List, Map
-        // - Test custom objects with fromJson
-      });
+    test('should return null for an expired value', () async {
+      cacheService.set('key', 'value');
+      await Future.delayed(const Duration(seconds: 2));
+      expect(cacheService.get('key'), null);
     });
 
-    group('Persistence', () {
-      test('should persist data to disk when requested', () async {
-        // TODO: Implement test for disk persistence
-        // - Test persistToDisk flag
-        // - Test data survival across app restarts
-      });
-
-      test('should restore data from disk', () async {
-        // TODO: Implement test for disk restoration
-        // - Test checkDisk flag
-        // - Test data restoration with fromJson
-      });
+    test('should return null for a non-existent value', () {
+      expect(cacheService.get('key'), null);
     });
 
-    group('Advanced Features', () {
-      test('should support getOrFetch pattern', () async {
-        // TODO: Implement test for getOrFetch
-        // - Test cache hit scenario
-        // - Test cache miss with fetch function
-        // - Test error handling in fetch function
-      });
+    test('should remove a value', () {
+      cacheService.set('key', 'value');
+      cacheService.remove('key');
+      expect(cacheService.get('key'), null);
+    });
 
-      test('should support cache invalidation', () async {
-        // TODO: Implement test for cache invalidation
-        // - Test invalidate by pattern
-        // - Test clear all cache
-        // - Test remove specific keys
-      });
+    test('should clear all values', () {
+      cacheService.set('key1', 'value1');
+      cacheService.set('key2', 'value2');
+      cacheService.clear();
+      expect(cacheService.get('key1'), null);
+      expect(cacheService.get('key2'), null);
+    });
+
+    test('should fetch a value if it does not exist', () async {
+      final value = await cacheService.getOrFetch('key', () async => 'value');
+      expect(value, 'value');
+      expect(cacheService.get('key'), 'value');
+    });
+
+    test('should not fetch a value if it exists', () async {
+      cacheService.set('key', 'value');
+      final value = await cacheService.getOrFetch('key', () async => 'new-value');
+      expect(value, 'value');
+      expect(cacheService.get('key'), 'value');
     });
   });
 }

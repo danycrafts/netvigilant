@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:apptobe/core/interfaces/notification_service.dart';
+import 'package:apptobe/core/architecture/dependency_injection/service_locator.dart';
 import '../interfaces/widget_interfaces.dart';
-import '../dependency_injection/service_locator.dart';
 
 // SOLID - Base screen class with common functionality
 abstract class BaseScreen extends StatefulWidget implements IRefreshableWidget {
@@ -60,7 +61,7 @@ class _BaseScreenState extends State<BaseScreen> {
       await widget.refresh();
     } catch (error) {
       if (mounted) {
-        ServiceLocator.notificationService.showError(
+        getIt<INotificationService>().showError(
           'Refresh failed: ${error.toString()}'
         );
       }
@@ -90,7 +91,7 @@ mixin LoadingScreenMixin<T extends StatefulWidget> on State<T> {
         child,
         if (_isLoading)
           Container(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withAlpha((255 * 0.3).round()),
             child: const Center(
               child: CircularProgressIndicator(),
             ),
@@ -104,7 +105,7 @@ mixin LoadingScreenMixin<T extends StatefulWidget> on State<T> {
 mixin ErrorHandlingMixin<T extends StatefulWidget> on State<T> {
   void handleError(Object error, {bool showSnackBar = true}) {
     if (showSnackBar && mounted) {
-      ServiceLocator.notificationService.showError(
+      getIt<INotificationService>().showError(
         'Error: ${error.toString()}'
       );
     }
@@ -113,7 +114,7 @@ mixin ErrorHandlingMixin<T extends StatefulWidget> on State<T> {
 
   void handleSuccess(String message) {
     if (mounted) {
-      ServiceLocator.notificationService.showSuccess(message);
+      getIt<INotificationService>().showSuccess(message);
     }
   }
 }

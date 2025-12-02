@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:apptobe/core/theme/app_theme.dart';
 
 class AppInitializationWrapper extends StatefulWidget {
   final Widget child;
@@ -36,29 +37,18 @@ class _AppInitializationWrapperState extends State<AppInitializationWrapper> {
   Widget build(BuildContext context) {
     if (!_isInitialized) {
       return MaterialApp(
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
         home: Scaffold(
-          backgroundColor: const Color(0xFF121217),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFF33B1FF)
-                        : const Color(0xFF33B1FF),
-                  ),
-                ),
+                const CircularProgressIndicator(),
                 const SizedBox(height: 20),
                 Text(
                   'NetVigilant',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFFFFFFFF)
-                        : const Color(0xFF121217),
-                  ),
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ],
             ),

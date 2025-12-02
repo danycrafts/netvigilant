@@ -105,7 +105,7 @@ class DualNetworkPanel extends StatelessWidget {
             label: const Text('Refresh'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              textStyle: const TextStyle(fontSize: 14),
+              textStyle: Theme.of(context).textTheme.labelMedium,
             ),
           ),
         ],

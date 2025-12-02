@@ -1,37 +1,33 @@
-import '../interfaces/repository_interfaces.dart';
-import '../../services/cache_service.dart';
+import 'package:apptobe/core/interfaces/cache_repository.dart';
+import 'package:apptobe/core/services/cache_service.dart';
 
-// SOLID - Single Responsibility: Only manages cache operations
 class CacheRepositoryImpl implements ICacheRepository {
   final CacheService _cacheService;
 
-  const CacheRepositoryImpl({
-    required CacheService cacheService,
-  }) : _cacheService = cacheService;
+  CacheRepositoryImpl(this._cacheService);
 
   @override
   Future<void> store<T>(String key, T data, {Duration? ttl}) async {
-    await _cacheService.set(key, data, ttl: ttl);
+    _cacheService.set(key, data);
   }
 
   @override
   Future<T?> retrieve<T>(String key) async {
-    return await _cacheService.get<T>(key);
+    return _cacheService.get(key) as T?;
   }
 
   @override
   Future<bool> exists(String key) async {
-    final data = await _cacheService.get(key);
-    return data != null;
+    return _cacheService.get(key) != null;
   }
 
   @override
   Future<void> remove(String key) async {
-    await _cacheService.remove(key);
+    _cacheService.remove(key);
   }
 
   @override
   Future<void> clear() async {
-    await _cacheService.clear();
+    _cacheService.clear();
   }
 }
