@@ -5,25 +5,61 @@ import 'package:apptobe/core/widgets/common_widgets.dart';
 import 'package:apptobe/core/constants/app_constants.dart';
 import 'package:apptobe/core/services/app_usage_service.dart';
 import 'package:apptobe/core/services/permission_manager.dart';
+import 'package:apptobe/core/services/cached_app_service.dart';
+import 'package:apptobe/core/architecture/base_widgets/base_screen.dart';
+import 'package:apptobe/core/architecture/dependency_injection/service_locator.dart';
+import 'package:apptobe/core/architecture/interfaces/repository_interfaces.dart';
+import 'package:apptobe/core/architecture/interfaces/service_interfaces.dart';
 
-class SearchScreen extends StatefulWidget {
+class SearchScreen extends BaseScreen {
   const SearchScreen({super.key});
+
+  @override
+  String get title => 'Search';
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: () => refresh(),
+        tooltip: 'Refresh apps',
+      ),
+    ];
+  }
+
+
+  @override
+  Widget buildBody(BuildContext context) {
+    return const _SearchScreenBody();
+  }
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver {
+class _SearchScreenState extends State<SearchScreen> 
+    with WidgetsBindingObserver, LoadingScreenMixin, ErrorHandlingMixin {
   final TextEditingController _searchController = TextEditingController();
-  List<Application> _apps = [];
-  List<Application> _filteredApps = [];
-  bool _isLoading = true;
+  final CachedAppService _appService = CachedAppService();
+  List<CachedAppInfo> _apps = [];
+  List<CachedAppInfo> _filteredApps = [];
   bool _hasUsagePermission = false;
+  bool _showUsageInGrid = false;
+
+  // SOLID - Use injected services
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // SOLID - Initialize dependencies
+    _appRepository = ServiceLocator.get<IAppRepository>();
+    _usageRepository = ServiceLocator.get<IUsageRepository>();
+    _permissionRepository = ServiceLocator.get<IPermissionRepository>();
+    _notificationService = ServiceLocator.get<INotificationService>();
+    
     _initializeScreen();
     _searchController.addListener(_filterApps);
   }
@@ -36,25 +72,46 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
   }
 
   Future<void> _initializeScreen() async {
-    await _fetchApps();
-    await _checkUsagePermission();
+    setLoading(true);
+    try {
+      await Future.wait([
+        _fetchApps(),
+        _checkUsagePermission(),
+      ]);
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<void> _refreshApps() async {
+    setLoading(true);
+    try {
+      await _fetchApps(forceRefresh: true);
+      handleSuccess('Apps refreshed successfully');
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   Future<void> _checkUsagePermission() async {
     final hasPermission = await AppUsageService.hasUsagePermission();
+    final storedPermission = await PermissionManager.hasStoredUsagePermission();
+    
     if (mounted) {
       setState(() {
-        _hasUsagePermission = hasPermission;
+        _hasUsagePermission = hasPermission || storedPermission;
       });
     }
   }
 
-  Future<void> _fetchApps() async {
+  Future<void> _fetchApps({bool forceRefresh = false}) async {
     try {
-      final apps = await DeviceApps.getInstalledApplications(
-        includeAppIcons: true,
-        includeSystemApps: true, // Show all apps including system apps
-        onlyAppsWithLaunchIntent: false, // Show all apps even without launch intent
+      final apps = await _appService.getAppsWithUsageStats(
+        forceRefresh: forceRefresh,
       );
       if (mounted) {
         setState(() {
@@ -68,8 +125,8 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
         setState(() {
           _apps = [];
           _filteredApps = [];
-          _isLoading = false;
         });
+        setLoading(false);
       }
     }
   }
@@ -77,13 +134,14 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
   void _filterApps() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredApps = _apps.where((app) {
-        return app.appName.toLowerCase().contains(query);
+      _filteredApps = _apps.where((appInfo) {
+        return appInfo.app.appName.toLowerCase().contains(query);
       }).toList();
     });
   }
 
-  void _showAppDetails(Application app) {
+  void _showAppDetails(CachedAppInfo appInfo) {
+    final app = appInfo.app;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -150,10 +208,41 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
                   if (!_hasUsagePermission)
                     TextButton(
                       onPressed: () async {
-                        await PermissionManager.requestAndStoreUsagePermission();
+                        final granted = await PermissionManager.requestAndStoreUsagePermission();
                         await _checkUsagePermission();
+                        if (mounted && granted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Usage permission granted successfully!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else if (mounted && !granted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Permission denied. Please enable it in settings.'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
                       },
                       child: const Text('Grant Permission'),
+                    )
+                  else
+                    TextButton(
+                      onPressed: () async {
+                        await PermissionManager.revokeUsagePermission();
+                        await _checkUsagePermission();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Usage permission revoked'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Revoke Permission'),
                     ),
                 ],
               ),
@@ -182,26 +271,17 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
                     ),
                   ),
                 )
+              else if (appInfo.usageInfo != null)
+                _buildUsageStats(appInfo.usageInfo!)
               else
-                FutureBuilder<AppUsageInfo?>(
-                  future: AppUsageService.getAppUsageInfo(app.packageName),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasData && snapshot.data != null) {
-                      return _buildUsageStats(snapshot.data!);
-                    } else {
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Text(
-                            'No usage data available for this app.',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ),
-                      );
-                    }
-                  },
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      'No usage data available for this app.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -237,12 +317,38 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
   }
 
   Widget _buildUsageStats(AppUsageInfo usageInfo) {
-    return Column(
-      children: [
-        _buildInfoRow('Total Usage Time', _formatDuration(usageInfo.totalTimeInForeground)),
-        _buildInfoRow('Launch Count', usageInfo.launchCount.toString()),
-        _buildInfoRow('Last Used', _formatDateTime(usageInfo.lastTimeUsed)),
-      ],
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Usage Statistics',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildStatsRow(Icons.timer, 'Total Usage Time', _formatDuration(usageInfo.totalTimeInForeground)),
+            const SizedBox(height: 8),
+            _buildStatsRow(Icons.launch, 'Launch Count', '${usageInfo.launchCount} times'),
+            const SizedBox(height: 8),
+            _buildStatsRow(Icons.history, 'Last Used', _formatDateTime(usageInfo.lastTimeUsed)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -254,6 +360,35 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
     } else {
       return '${duration.inSeconds}s';
     }
+  }
+
+  Widget _buildStatsRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 14,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+      ],
+    );
   }
 
   String _formatDateTime(DateTime dateTime) {
@@ -271,6 +406,17 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
     }
   }
 
+  String _formatUsageForGrid(AppUsageInfo usageInfo) {
+    final duration = usageInfo.totalTimeInForeground;
+    if (duration.inHours > 0) {
+      return '${duration.inHours}h';
+    } else if (duration.inMinutes > 0) {
+      return '${duration.inMinutes}m';
+    } else {
+      return '${duration.inSeconds}s';
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -280,33 +426,91 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      title: 'Search',
-      body: Padding(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Column(
-          children: [
-            AppTextField(
-              label: 'Search',
-              controller: _searchController,
-              hintText: 'Enter your search query...',
-              prefixIcon: const Icon(Icons.search),
-            ),
-            const SizedBox(height: AppConstants.defaultSpacing),
-            Expanded(
-              child: _isLoading
-                  ? _buildShimmerGrid()
-                  : _apps.isEmpty
-                      ? const Center(child: Text('No apps found on this device.'))
-                      : _buildAppGrid(),
-            ),
-          ],
-        ),
+    // Use mixin for loading overlay
+    return buildWithLoading(
+      const _SearchScreenBody(),
+    );
+  }
+}
+
+// SOLID - Separate body widget with single responsibility  
+class _SearchScreenBody extends StatelessWidget {
+  const _SearchScreenBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final searchState = context.findAncestorStateOfType<_SearchScreenState>();
+    
+    return Padding(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      child: Column(
+        children: [
+          _buildSearchField(searchState),
+          const SizedBox(height: AppConstants.smallSpacing),
+          _buildUsageToggle(context, searchState),
+          const SizedBox(height: AppConstants.defaultSpacing),
+          _buildAppsList(searchState),
+        ],
       ),
     );
   }
 
-  Widget _buildShimmerGrid() {
+  // DRY - Reusable search field widget
+  Widget _buildSearchField(_SearchScreenState? searchState) {
+    return AppTextField(
+      label: 'Search',
+      controller: searchState?._searchController ?? TextEditingController(),
+      hintText: 'Enter your search query...',
+      prefixIcon: const Icon(Icons.search),
+    );
+  }
+
+  // DRY - Reusable usage toggle widget
+  Widget _buildUsageToggle(BuildContext context, _SearchScreenState? searchState) {
+    return Row(
+      children: [
+        const Text('Show usage in grid'),
+        const SizedBox(width: 8),
+        Switch(
+          value: searchState?._showUsageInGrid ?? false,
+          onChanged: (searchState?._hasUsagePermission ?? false) ? (value) {
+            searchState?.setState(() => searchState._showUsageInGrid = value);
+          } : null,
+        ),
+        const Spacer(),
+        if (!(searchState?._hasUsagePermission ?? true))
+          Text(
+            'Grant usage permission to show usage stats',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // DRY - Reusable apps list widget
+  Widget _buildAppsList(_SearchScreenState? searchState) {
+    return Expanded(
+      child: searchState?.isLoading == true
+          ? const _ShimmerAppGrid()
+          : (searchState?._apps.isEmpty ?? true)
+              ? const Center(child: Text('No apps found on this device.'))
+              : _AppGrid(
+                  apps: searchState?._filteredApps ?? [],
+                  showUsage: searchState?._showUsageInGrid ?? false,
+                  onAppTap: searchState?._showAppDetails,
+                ),
+    );
+  }
+}
+
+// SOLID - Single responsibility widget for loading state
+class _ShimmerAppGrid extends StatelessWidget {
+  const _ShimmerAppGrid();
+
+  @override
+  Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Shimmer.fromColors(
       baseColor: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
@@ -318,97 +522,175 @@ class _SearchScreenState extends State<SearchScreen> with WidgetsBindingObserver
           mainAxisSpacing: 8,
         ),
         itemCount: 16,
-        itemBuilder: (context, index) {
-          return Column(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.grey[800] : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                height: 8,
-                width: 40,
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.grey[800] : Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ],
-          );
-        },
+        itemBuilder: (context, index) => _buildShimmerItem(context, isDarkMode),
       ),
     );
   }
 
-  Widget _buildAppGrid() {
+  // DRY - Reusable shimmer item
+  Widget _buildShimmerItem(BuildContext context, bool isDarkMode) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: isDarkMode ? Colors.grey[800] : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 8,
+          width: 40,
+          decoration: BoxDecoration(
+            color: isDarkMode ? Colors.grey[800] : Colors.white,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// SOLID - Single responsibility widget for app grid
+class _AppGrid extends StatelessWidget {
+  final List<CachedAppInfo> apps;
+  final bool showUsage;
+  final Function(CachedAppInfo)? onAppTap;
+
+  const _AppGrid({
+    required this.apps,
+    required this.showUsage,
+    this.onAppTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
-      itemCount: _filteredApps.length,
-      itemBuilder: (context, index) {
-        final app = _filteredApps[index];
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _showAppDetails(app),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (app is ApplicationWithIcon)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.memory(
-                        app.icon,
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  else
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.android,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 24,
-                      ),
-                    ),
-                  const SizedBox(height: 4),
-                  Text(
-                    app.appName,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      itemCount: apps.length,
+      itemBuilder: (context, index) => _AppGridItem(
+        appInfo: apps[index],
+        showUsage: showUsage,
+        onTap: () => onAppTap?.call(apps[index]),
+      ),
     );
   }
 }
+
+// SOLID - Single responsibility widget for individual app item
+class _AppGridItem extends StatelessWidget {
+  final CachedAppInfo appInfo;
+  final bool showUsage;
+  final VoidCallback? onTap;
+
+  const _AppGridItem({
+    required this.appInfo,
+    required this.showUsage,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final app = appInfo.app;
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildAppIcon(context, app),
+              const SizedBox(height: 4),
+              _buildAppName(context, app),
+              if (showUsage && appInfo.usageInfo != null)
+                _buildUsageText(context, appInfo.usageInfo!),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // DRY - Reusable app icon widget
+  Widget _buildAppIcon(BuildContext context, Application app) {
+    if (app is ApplicationWithIcon) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.memory(
+          app.icon,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+        ),
+      );
+    } else {
+      return Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          Icons.android,
+          color: Theme.of(context).colorScheme.primary,
+          size: 24,
+        ),
+      );
+    }
+  }
+
+  // DRY - Reusable app name widget
+  Widget _buildAppName(BuildContext context, Application app) {
+    return Text(
+      app.appName,
+      textAlign: TextAlign.center,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        fontSize: 10,
+      ),
+    );
+  }
+
+  // DRY - Reusable usage text widget
+  Widget _buildUsageText(BuildContext context, AppUsageInfo usageInfo) {
+    return Text(
+      _formatUsageForGrid(usageInfo),
+      textAlign: TextAlign.center,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        fontSize: 8,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+
+  // DRY - Reusable formatting method
+  String _formatUsageForGrid(AppUsageInfo usageInfo) {
+    final duration = usageInfo.totalTimeInForeground;
+    if (duration.inHours > 0) {
+      return '${duration.inHours}h';
+    } else if (duration.inMinutes > 0) {
+      return '${duration.inMinutes}m';
+    } else {
+      return '${duration.inSeconds}s';
+    }
+  }
+}
+

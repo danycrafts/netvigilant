@@ -1,32 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'package:apptobe/core/services/location_service.dart';
+import 'package:apptobe/core/services/cached_location_service.dart';
 import 'package:apptobe/core/providers/network_provider.dart';
 import 'package:apptobe/core/widgets/dual_network_panel.dart';
 import 'package:apptobe/core/presentation/widgets/map_widget.dart';
+import 'package:apptobe/core/widgets/adaptive_quick_apps_widget.dart';
+import 'package:apptobe/core/widgets/adaptive_analytics_widget.dart';
+import 'package:apptobe/core/architecture/base_widgets/base_screen.dart';
+import 'package:apptobe/core/architecture/dependency_injection/service_locator.dart';
+import 'package:apptobe/core/architecture/interfaces/repository_interfaces.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends BaseScreen {
   const HomeScreen({super.key, required this.title});
 
   final String title;
 
   @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: () => refresh(),
+        tooltip: 'Refresh data',
+      ),
+    ];
+  }
+
+
+  @override
+  Widget buildBody(BuildContext context) {
+    return const _HomeScreenBody();
+  }
+
+  @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final ILocationService _locationService = LocationService();
+class _HomeScreenState extends State<HomeScreen> 
+    with LoadingScreenMixin, ErrorHandlingMixin {
+  final CachedLocationService _locationService = CachedLocationService();
   LatLng? _currentPosition;
   LatLng? _publicIpPosition;
-  bool _isLoading = true;
   NetworkProvider? _networkProvider;
   VoidCallback? _networkProviderListener;
+
+  // SOLID - Use injected services
 
   @override
   void initState() {
     super.initState();
-    _determinePosition();
+    // SOLID - Initialize dependencies through service locator
+    _locationRepository = ServiceLocator.get<ILocationRepository>();
+    _cacheRepository = ServiceLocator.get<ICacheRepository>();
+    _initializeScreen();
   }
 
   @override
@@ -56,13 +83,34 @@ class _HomeScreenState extends State<HomeScreen> {
     _networkProvider?.stopMonitoring();
   }
 
+  Future<void> _initializeScreen() async {
+    setLoading(true);
+    try {
+      await _determinePosition();
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   Future<void> _determinePosition() async {
     final position = await _locationService.getCurrentPosition();
     if (mounted) {
-      setState(() {
-        _currentPosition = position;
-        _isLoading = false;
-      });
+      setState(() => _currentPosition = position);
+    }
+  }
+
+  Future<void> _refreshData() async {
+    setLoading(true);
+    try {
+      await _determinePosition();
+      await _networkProvider?.refreshNetworkInfo();
+      handleSuccess('Data refreshed successfully');
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -95,23 +143,60 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Column(
+    // Use mixin for loading overlay
+    return buildWithLoading(
+      const _HomeScreenBody(),
+    );
+  }
+}
+
+// SOLID - Separate body widget with single responsibility
+class _HomeScreenBody extends StatelessWidget {
+  const _HomeScreenBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+    
+    return SingleChildScrollView(
+      child: Column(
         children: [
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.3,
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : MapWidget(
-                    currentPosition: _currentPosition,
-                    publicIpPosition: _publicIpPosition,
-                  ),
-          ),
-          const Expanded(
-            child: DualNetworkPanel(),
+          _buildMapSection(context, homeState),
+          const SizedBox(height: 8),
+          const AdaptiveQuickAppsWidget(),
+          const SizedBox(height: 16),
+          const AdaptiveAnalyticsWidget(),
+          const SizedBox(height: 16),
+          const DualNetworkPanel(),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  // DRY - Reusable map section widget
+  Widget _buildMapSection(BuildContext context, _HomeScreenState? homeState) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.25,
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: homeState?.isLoading == true
+            ? const Center(child: CircularProgressIndicator())
+            : MapWidget(
+                currentPosition: homeState?._currentPosition,
+                publicIpPosition: homeState?._publicIpPosition,
+              ),
       ),
     );
   }

@@ -39,6 +39,13 @@ class PermissionManager {
     await prefs.remove(_usagePermissionAskedKey);
   }
 
+  /// Revoke usage permission
+  static Future<void> revokeUsagePermission() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_usagePermissionKey, false);
+    await prefs.setBool(_usagePermissionAskedKey, true);
+  }
+
   /// Check if we need to ask for usage permission
   /// DRY: Combines multiple checks in one method
   static Future<bool> shouldRequestUsagePermission() async {
@@ -67,5 +74,22 @@ class PermissionManager {
     }
     
     return granted;
+  }
+
+  /// Check if usage permission is currently granted
+  static Future<bool> hasUsagePermission() async {
+    return await AppUsageService.hasUsagePermission();
+  }
+
+  /// Check if location permission is granted (placeholder implementation)
+  static Future<bool> hasLocationPermission() async {
+    // TODO: Implement actual location permission check
+    return false;
+  }
+
+  /// Request location permission (placeholder implementation)
+  static Future<bool> requestLocationPermission() async {
+    // TODO: Implement actual location permission request
+    return false;
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:apptobe/navigation/root_page.dart';
 import 'package:provider/provider.dart';
 import 'package:apptobe/core/providers/theme_provider.dart';
 import 'package:apptobe/core/theme/app_theme.dart';

@@ -83,7 +83,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           );
         }
 
-        if (authProvider.isLoggedIn) {
+        if (authProvider.isLoggedIn || authProvider.isGuestMode) {
           return const RootPage();
         } else {
           return const WelcomeScreen();
@@ -150,11 +150,25 @@ class WelcomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RootPage()),
-                );
+              onPressed: () async {
+                try {
+                  // Set guest mode in AuthProvider before navigating
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  await authProvider.setGuestMode();
+                  
+                  // Navigate after setting guest mode
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const RootPage()),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
               child: const Text('Skip for now'),
             ),

@@ -59,23 +59,34 @@ class _MapWidgetState extends State<MapWidget> with TickerProviderStateMixin {
   }
 
   void _fitBounds() {
-    if (widget.currentPosition == null || widget.publicIpPosition == null) return;
+    final positions = <LatLng>[];
+    
+    if (widget.currentPosition != null) {
+      positions.add(widget.currentPosition!);
+    }
+    if (widget.publicIpPosition != null) {
+      positions.add(widget.publicIpPosition!);
+    }
 
-    final distance = const Distance().as(
-      LengthUnit.Kilometer,
-      widget.currentPosition!,
-      widget.publicIpPosition!,
-    );
+    if (positions.isEmpty) return;
 
-    if (distance < 1.0) {
-      _mapController.move(widget.currentPosition!, 15.0);
+    if (positions.length == 1) {
+      _mapController.move(positions.first, 15.0);
       return;
     }
 
-    final bounds = LatLngBounds.fromPoints([
-      widget.currentPosition!,
-      widget.publicIpPosition!,
-    ]);
+    final distance = const Distance().as(
+      LengthUnit.Kilometer,
+      positions[0],
+      positions[1],
+    );
+
+    if (distance < 1.0) {
+      _mapController.move(positions[0], 15.0);
+      return;
+    }
+
+    final bounds = LatLngBounds.fromPoints(positions);
 
     _mapController.fitCamera(
       CameraFit.bounds(
@@ -105,6 +116,31 @@ class _MapWidgetState extends State<MapWidget> with TickerProviderStateMixin {
     if (widget.currentPosition != null) {
       _mapController.move(widget.currentPosition!, 15.0);
     }
+  }
+
+  Widget _buildMapControlButton({
+    required String heroTag,
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String tooltip,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: 40,
+          height: 40,
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -168,26 +204,43 @@ class _MapWidgetState extends State<MapWidget> with TickerProviderStateMixin {
         Positioned(
           right: 10,
           bottom: 10,
-          child: Column(
-            children: [
-              FloatingActionButton.small(
-                heroTag: "zoomInBtn",
-                onPressed: widget.onZoomIn ?? _zoomIn,
-                child: const Icon(Icons.add),
-              ),
-              const SizedBox(height: 8),
-              FloatingActionButton.small(
-                heroTag: "zoomOutBtn",
-                onPressed: widget.onZoomOut ?? _zoomOut,
-                child: const Icon(Icons.remove),
-              ),
-              const SizedBox(height: 8),
-              FloatingActionButton.small(
-                heroTag: "recenterBtn",
-                onPressed: widget.onRecenter ?? _recenter,
-                child: const Icon(Icons.my_location),
-              ),
-            ],
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(25),
+              color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildMapControlButton(
+                  heroTag: "zoomInBtn",
+                  onPressed: widget.onZoomIn ?? _zoomIn,
+                  icon: Icons.add,
+                  tooltip: 'Zoom In',
+                ),
+                const Divider(height: 1),
+                _buildMapControlButton(
+                  heroTag: "zoomOutBtn",
+                  onPressed: widget.onZoomOut ?? _zoomOut,
+                  icon: Icons.remove,
+                  tooltip: 'Zoom Out',
+                ),
+                const Divider(height: 1),
+                _buildMapControlButton(
+                  heroTag: "recenterBtn",
+                  onPressed: widget.onRecenter ?? _recenter,
+                  icon: Icons.my_location,
+                  tooltip: 'Recenter',
+                ),
+              ],
+            ),
           ),
         )
       ],
