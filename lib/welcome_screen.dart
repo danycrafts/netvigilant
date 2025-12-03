@@ -32,7 +32,7 @@ class WelcomeScreen extends StatelessWidget {
             Text(
               'Monitor your digital habits and stay secure',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
                   ),
               textAlign: TextAlign.center,
             ),

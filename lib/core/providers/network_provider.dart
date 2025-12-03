@@ -1,27 +1,29 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import '../models/network_info.dart';
-import '../services/wifi_network_service.dart';
-import '../services/mobile_network_service.dart';
+import 'package:apptobe/core/models/network_info.dart' as models;
+import 'package:apptobe/core/services/wifi_network_service.dart';
+import 'package:apptobe/core/services/mobile_network_service.dart';
+import 'package:apptobe/core/services/cache_service.dart';
+import 'package:apptobe/core/interfaces/network_service.dart';
 
 class NetworkProvider with ChangeNotifier {
-  final WifiNetworkService _wifiService = WifiNetworkService();
-  final MobileNetworkService _mobileService = MobileNetworkService();
+  final WifiNetworkService _wifiService = WifiNetworkService(CacheService<models.NetworkInfo>(const Duration(minutes: 5)));
+  final MobileNetworkService _mobileService = MobileNetworkService(CacheService<models.NetworkInfo>(const Duration(minutes: 5)));
   
   StreamSubscription? _wifiSubscription;
   StreamSubscription? _mobileSubscription;
   StreamSubscription? _connectivitySubscription;
 
-  NetworkInfo? _wifiNetworkInfo;
-  NetworkInfo? _mobileNetworkInfo;
+  models.NetworkInfo? _wifiNetworkInfo;
+  models.NetworkInfo? _mobileNetworkInfo;
   
   bool _isMonitoring = false;
   bool _isDisposed = false;
   List<ConnectivityResult> _currentConnectivity = [];
 
-  NetworkInfo? get wifiNetworkInfo => _wifiNetworkInfo;
-  NetworkInfo? get mobileNetworkInfo => _mobileNetworkInfo;
+  models.NetworkInfo? get wifiNetworkInfo => _wifiNetworkInfo;
+  models.NetworkInfo? get mobileNetworkInfo => _mobileNetworkInfo;
   
   bool get hasWifiConnection => _currentConnectivity.contains(ConnectivityResult.wifi);
   bool get hasMobileConnection => _currentConnectivity.contains(ConnectivityResult.mobile);
@@ -70,12 +72,12 @@ class NetworkProvider with ChangeNotifier {
 
   Future<void> refreshNetworkInfo() async {
     if (hasWifiConnection) {
-      _wifiNetworkInfo = NetworkInfo.loading(NetworkType.wifi);
+      _wifiNetworkInfo = models.NetworkInfo.loading(models.NetworkType.wifi);
       _safeNotifyListeners();
     }
     
     if (hasMobileConnection) {
-      _mobileNetworkInfo = NetworkInfo.loading(NetworkType.mobile);
+      _mobileNetworkInfo = models.NetworkInfo.loading(models.NetworkType.mobile);
       _safeNotifyListeners();
     }
 
@@ -83,7 +85,7 @@ class NetworkProvider with ChangeNotifier {
       try {
         _wifiNetworkInfo = await _wifiService.getCurrentNetworkInfo();
       } catch (e) {
-        _wifiNetworkInfo = NetworkInfo.error(NetworkType.wifi);
+        _wifiNetworkInfo = models.NetworkInfo.error(models.NetworkType.wifi);
       }
     }
 
@@ -91,7 +93,7 @@ class NetworkProvider with ChangeNotifier {
       try {
         _mobileNetworkInfo = await _mobileService.getCurrentNetworkInfo();
       } catch (e) {
-        _mobileNetworkInfo = NetworkInfo.error(NetworkType.mobile);
+        _mobileNetworkInfo = models.NetworkInfo.error(models.NetworkType.mobile);
       }
     }
 

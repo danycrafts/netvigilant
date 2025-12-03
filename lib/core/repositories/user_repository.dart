@@ -1,22 +1,25 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
-import '../interfaces/user_repository.dart';
-import '../models/user_profile.dart';
-import '../services/cache_service.dart';
+import 'package:apptobe/core/interfaces/user_repository.dart';
+import 'package:apptobe/core/models/user_profile.dart';
+import 'package:apptobe/core/services/cache_service.dart';
 
 class UserRepository implements IUserRepository {
-  final CacheService<UserProfile> _userProfileCache = CacheService<UserProfile>(const Duration(minutes: 10));
-  final CacheService<Map<String, bool>> _notificationSettingsCache = CacheService<Map<String, bool>>(const Duration(minutes: 10));
+  final CacheService<UserProfile> _userProfileCache;
+  final CacheService<Map<String, bool>> _notificationSettingsCache;
   static const String _emailNotificationsKey = 'email_notifications';
   static const String _phoneNotificationsKey = 'phone_notifications';
   static const String _pushNotificationsKey = 'push_notifications';
+  static const String _userProfileKey = 'user_profile';
   
   // Fallback storage for when SharedPreferences fails
   static final Map<String, dynamic> _fallbackStorage = {};
 
+  UserRepository(this._userProfileCache, this._notificationSettingsCache);
+
   @override
   Future<UserProfile> getUserProfile() async {
-    final cachedProfile = _userProfileCache.get('user_profile');
+    final cachedProfile = _userProfileCache.get(_userProfileKey);
     if (cachedProfile != null) {
       return cachedProfile;
     }
@@ -31,7 +34,7 @@ class UserRepository implements IUserRepository {
         email: prefs.getString('email') ?? 'user.name@example.com',
         phone: prefs.getString('phone') ?? '',
       );
-      _userProfileCache.set('user_profile', profile);
+      _userProfileCache.set(_userProfileKey, profile);
       return profile;
     } catch (e) {
       if (kDebugMode) {
@@ -59,7 +62,7 @@ class UserRepository implements IUserRepository {
       await prefs.setString('email', profile.email);
       await prefs.setString('phone', profile.phone);
 
-      _userProfileCache.set('user_profile', profile);
+      _userProfileCache.set(_userProfileKey, profile);
     } catch (e) {
       if (kDebugMode) {
         print('SharedPreferences error in updateUserProfile: $e');

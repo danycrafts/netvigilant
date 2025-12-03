@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
-import '../models/user_profile.dart';
-import '../interfaces/user_repository.dart';
-import '../repositories/user_repository.dart';
+import 'package:apptobe/core/models/user_profile.dart';
+import 'package:apptobe/core/interfaces/user_repository.dart';
+import 'package:apptobe/core/repositories/user_repository.dart';
+import 'package:apptobe/core/services/cache_service.dart';
 
 class UserProfileProvider extends ChangeNotifier {
   UserProfile _userProfile = UserProfile(
@@ -28,7 +29,7 @@ class UserProfileProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   UserProfileProvider({IUserRepository? userRepository}) {
-    _userRepository = userRepository ?? UserRepository();
+    _userRepository = userRepository ?? UserRepository(CacheService<UserProfile>(const Duration(minutes: 10)), CacheService<Map<String, bool>>(const Duration(minutes: 10)));
     _loadUserData();
   }
 

@@ -2,9 +2,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:network_info_plus/network_info_plus.dart' as network_info_plus;
-import '../interfaces/network_service.dart';
-import '../models/network_info.dart' as models;
-import 'network_data_fetcher.dart';
+import 'package:apptobe/core/interfaces/network_service.dart';
+import 'package:apptobe/core/models/network_info.dart' as models;
+import 'package:apptobe/core/services/network_data_fetcher.dart';
+import 'package:apptobe/core/services/cache_service.dart';
 
 import 'cache_service.dart';
 
@@ -13,7 +14,9 @@ class WifiNetworkService implements INetworkService {
   Timer? _monitoringTimer;
   StreamSubscription? _connectivitySubscription;
   bool _isDisposed = false;
-  final CacheService<models.NetworkInfo> _cache = CacheService<models.NetworkInfo>(const Duration(minutes: 5));
+  final CacheService<models.NetworkInfo> _cache;
+
+  WifiNetworkService(this._cache);
   
   @override
   models.NetworkType get networkType => models.NetworkType.wifi;
@@ -32,15 +35,6 @@ class WifiNetworkService implements INetworkService {
         }
       }
     });
-
-    // Removed auto-refresh timer - only manual refresh now
-    // _monitoringTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-    //   if (!_isDisposed) {
-    //     _fetchAndEmitNetworkInfo();
-    //   } else {
-    //     timer.cancel();
-    //   }
-    // });
 
     await _fetchAndEmitNetworkInfo();
   }
