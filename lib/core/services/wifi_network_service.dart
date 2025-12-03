@@ -7,6 +7,8 @@ import 'package:apptobe/core/models/network_info.dart' as models;
 import 'package:apptobe/core/services/network_data_fetcher.dart';
 import 'package:apptobe/core/services/cache_service.dart';
 
+import 'cache_service.dart';
+
 class WifiNetworkService implements INetworkService {
   final StreamController<models.NetworkInfo> _networkInfoController = StreamController<models.NetworkInfo>.broadcast();
   Timer? _monitoringTimer;
